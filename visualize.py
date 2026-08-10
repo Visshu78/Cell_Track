@@ -110,10 +110,86 @@ def plot_morphology_distributions(
         plt.close(fig)
 
 
+def plot_cell_trajectories(
+    df_morphology: 'pd.DataFrame',
+    save_path: Optional[str] = None,
+    show: bool = True
+) -> None:
+    """
+    Plots 2D spatial cell migration trajectories over time.
+    """
+    if df_morphology.empty:
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+    df_sorted = df_morphology.sort_values(by=["label_id", "frame"])
+
+    for label_id, group in df_sorted.groupby("label_id"):
+        if len(group) > 1:
+            ax.plot(group["centroid_x"], group["centroid_y"], marker="o", markersize=3, label=f"Cell {label_id}")
+            ax.scatter(group["centroid_x"].iloc[0], group["centroid_y"].iloc[0], color="green", s=25, zorder=5)  # Start
+            ax.scatter(group["centroid_x"].iloc[-1], group["centroid_y"].iloc[-1], color="red", s=25, zorder=5)  # End
+
+    ax.set_title("2D Cell Migration Trajectories (Green=Start, Red=End)")
+    ax.set_xlabel("X Position (px)")
+    ax.set_ylabel("Y Position (px)")
+    ax.invert_yaxis()  # Match image coordinate conventions
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
+        print(f"[Visualize] Trajectories plot saved to {save_path}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+def plot_motility_distributions(
+    df_kinematics: 'pd.DataFrame',
+    save_path: Optional[str] = None,
+    show: bool = True
+) -> None:
+    """
+    Plots histograms of cell Speed, Net Displacement, and Directionality Ratio.
+    """
+    if df_kinematics.empty:
+        return
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+    axes[0].hist(df_kinematics["mean_speed"], bins=15, color="coral", edgecolor="black")
+    axes[0].set_title("Mean Cell Speed (px/frame)")
+    axes[0].set_xlabel("Speed")
+    axes[0].set_ylabel("Cell Count")
+
+    axes[1].hist(df_kinematics["net_displacement"], bins=15, color="mediumpurple", edgecolor="black")
+    axes[1].set_title("Net Displacement (px)")
+    axes[1].set_xlabel("Displacement")
+
+    axes[2].hist(df_kinematics["directionality_ratio"], bins=15, color="gold", edgecolor="black")
+    axes[2].set_title("Directionality Ratio (0=Random, 1=Straight)")
+    axes[2].set_xlabel("Directionality")
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
+        print(f"[Visualize] Motility plot saved to {save_path}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
 if __name__ == "__main__":
     # Test Matplotlib plot generation with dummy data
     dummy_masks = np.random.randint(0, 10, size=(2, 100, 100))
     dummy_tracked = np.random.randint(0, 10, size=(2, 100, 100))
     plot_frame_comparison(dummy_masks, dummy_tracked, frame_idx=0, show=False)
     print("[Visualize] Matplotlib visualization test passed.")
+
+
 

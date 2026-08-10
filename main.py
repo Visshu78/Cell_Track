@@ -8,19 +8,26 @@ from model_loader import get_trackastra_model
 from tracker import run_cell_tracking, get_frame_cell_counts, print_cell_statistics
 from morphology import extract_dataset_morphology, get_morphology_summary_stats
 from lineage import detect_cell_events, build_lineage_family_trees
-from visualize import plot_frame_comparison, plot_morphology_distributions, launch_napari_viewer
+from behavior import compute_cell_kinematics, compute_population_behavior_summary
+from visualize import (
+    plot_frame_comparison,
+    plot_morphology_distributions,
+    plot_cell_trajectories,
+    plot_motility_distributions,
+    launch_napari_viewer
+)
 from config import DEVICE, DEFAULT_MODEL_NAME
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Cell Tracking & Lineage Analysis Pipeline")
+    parser = argparse.ArgumentParser(description="Cell Tracking, Lineage & Behavior Analysis Pipeline")
     parser.add_argument("--model-name", type=str, default=DEFAULT_MODEL_NAME, help="Pretrained Trackastra model name")
     parser.add_argument("--device", type=str, default=DEVICE, help="Device to run inference ('cpu' or 'cuda')")
     parser.add_argument("--subset", type=int, default=None, help="Process only first N time frames for testing")
     parser.add_argument("--save-plot", type=str, default=None, help="Filepath to save frame comparison figure")
-    parser.add_argument("--export-csv", action="store_true", help="Export morphology and event datasets to CSV")
+    parser.add_argument("--export-csv", action="store_true", help="Export morphology, lineage, and behavior datasets to CSV")
     parser.add_argument("--napari", action="store_true", help="Launch interactive Napari viewer after tracking")
-    parser.add_argument("--no-show", action="store_true", help="Do not display Matplotlib pop-up window")
+    parser.add_argument("--no-show", action="store_true", help="Do not display Matplotlib pop-up windows")
     return parser.parse_args()
 
 
@@ -55,6 +62,11 @@ def main():
     family_trees = build_lineage_family_trees(track_graph)
     print(f"[Main] Lineage Summary: {event_summary}")
 
+    # 6. Quantify Cell Behavior & Motility Analytics (Module 4)
+    df_kinematics = compute_cell_kinematics(df_morphology)
+    behavior_summary = compute_population_behavior_summary(df_kinematics)
+    print(f"[Main] Population Behavior Summary: {behavior_summary}")
+
     # Print Cell Counts
     counts = get_frame_cell_counts(tracked_masks)
     print_cell_statistics(counts)
@@ -63,9 +75,10 @@ def main():
     if args.export_csv:
         df_morphology.to_csv("cell_morphology.csv", index=False)
         df_events.to_csv("cell_events.csv", index=False)
-        print("[Main] Exported 'cell_morphology.csv' and 'cell_events.csv' successfully!")
+        df_kinematics.to_csv("cell_behavior.csv", index=False)
+        print("[Main] Exported 'cell_morphology.csv', 'cell_events.csv', and 'cell_behavior.csv' successfully!")
 
-    # 6. Static Plot Visualizations
+    # 7. Static Plot Visualizations
     plot_frame_comparison(
         masks=masks,
         tracked_masks=tracked_masks,
@@ -76,11 +89,14 @@ def main():
 
     if not args.no_show:
         plot_morphology_distributions(df_morphology, show=True)
+        plot_cell_trajectories(df_morphology, show=True)
+        plot_motility_distributions(df_kinematics, show=True)
 
-    # 7. Interactive Napari Viewer
+    # 8. Interactive Napari Viewer
     if args.napari:
         launch_napari_viewer(masks=masks, tracked_masks=tracked_masks)
 
+    print("==================================================")
     print("==================================================")
     print("          Pipeline Completed Successfully!        ")
     print("==================================================")
@@ -88,4 +104,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
