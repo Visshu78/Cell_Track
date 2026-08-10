@@ -1,0 +1,10 @@
+# Cell Tracking with Trackastra & Napari Dependencies
+
+trackastra>=0.5.5
+pooch>=1.8.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+torch>=2.0.0
+torchvision>=0.15.0
+napari[pyqt5]>=0.4.18
+ipykernel>=6.0.0

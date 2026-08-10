@@ -1,0 +1,24 @@
+# Python virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# Data & Large Pretrained Models
+cell_tracking_data/
+trackastra_models/
+*.zip
+*.npz
+*.pt
+
+# Python Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# IDE & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
