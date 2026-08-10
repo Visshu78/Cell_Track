@@ -10,6 +10,8 @@ trackastra_models/
 *.zip
 *.npz
 *.pt
+*.csv
+
 
 # Python Byte-compiled / cache
 __pycache__/

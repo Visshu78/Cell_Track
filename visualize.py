@@ -72,9 +72,48 @@ def launch_napari_viewer(
     napari.run()
 
 
+def plot_morphology_distributions(
+    df_morphology: 'pd.DataFrame',
+    save_path: Optional[str] = None,
+    show: bool = True
+) -> None:
+    """
+    Plots distributions of cell Area, Circularity, and Eccentricity across frames.
+    """
+    if df_morphology.empty:
+        return
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+    axes[0].hist(df_morphology["area"], bins=20, color="skyblue", edgecolor="black")
+    axes[0].set_title("Cell Area Distribution (px²)")
+    axes[0].set_xlabel("Area")
+    axes[0].set_ylabel("Count")
+
+    axes[1].hist(df_morphology["circularity"], bins=20, color="lightgreen", edgecolor="black")
+    axes[1].set_title("Circularity Distribution (0=Line, 1=Circle)")
+    axes[1].set_xlabel("Circularity")
+
+    axes[2].hist(df_morphology["eccentricity"], bins=20, color="salmon", edgecolor="black")
+    axes[2].set_title("Eccentricity Distribution")
+    axes[2].set_xlabel("Eccentricity")
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
+        print(f"[Visualize] Morphology plot saved to {save_path}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
 if __name__ == "__main__":
     # Test Matplotlib plot generation with dummy data
     dummy_masks = np.random.randint(0, 10, size=(2, 100, 100))
     dummy_tracked = np.random.randint(0, 10, size=(2, 100, 100))
     plot_frame_comparison(dummy_masks, dummy_tracked, frame_idx=0, show=False)
     print("[Visualize] Matplotlib visualization test passed.")
+

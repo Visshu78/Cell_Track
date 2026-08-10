@@ -6,16 +6,19 @@ import argparse
 from data_loader import load_masks
 from model_loader import get_trackastra_model
 from tracker import run_cell_tracking, get_frame_cell_counts, print_cell_statistics
-from visualize import plot_frame_comparison, launch_napari_viewer
+from morphology import extract_dataset_morphology, get_morphology_summary_stats
+from lineage import detect_cell_events, build_lineage_family_trees
+from visualize import plot_frame_comparison, plot_morphology_distributions, launch_napari_viewer
 from config import DEVICE, DEFAULT_MODEL_NAME
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Cell Tracking with Trackastra & Napari")
+    parser = argparse.ArgumentParser(description="Cell Tracking & Lineage Analysis Pipeline")
     parser.add_argument("--model-name", type=str, default=DEFAULT_MODEL_NAME, help="Pretrained Trackastra model name")
     parser.add_argument("--device", type=str, default=DEVICE, help="Device to run inference ('cpu' or 'cuda')")
     parser.add_argument("--subset", type=int, default=None, help="Process only first N time frames for testing")
     parser.add_argument("--save-plot", type=str, default=None, help="Filepath to save frame comparison figure")
+    parser.add_argument("--export-csv", action="store_true", help="Export morphology and event datasets to CSV")
     parser.add_argument("--napari", action="store_true", help="Launch interactive Napari viewer after tracking")
     parser.add_argument("--no-show", action="store_true", help="Do not display Matplotlib pop-up window")
     return parser.parse_args()
@@ -34,17 +37,35 @@ def main():
         print(f"[Main] Subsetting dataset to first {args.subset} frames...")
         masks = masks[:args.subset]
 
+    total_frames = masks.shape[0]
+
     # 2. Load Model
     model = get_trackastra_model(model_name=args.model_name, device=args.device)
 
-    # 3. Perform Cell Tracking
+    # 3. Perform Cell Tracking (Module 2)
     tracked_masks, track_graph = run_cell_tracking(masks=masks, model=model)
 
-    # 4. Analyze & Print Statistics
+    # 4. Extract Cell Morphology Metrics (Module 1)
+    df_morphology = extract_dataset_morphology(tracked_masks)
+    morph_stats = get_morphology_summary_stats(df_morphology)
+    print(f"[Main] Cell Morphology Summary: {morph_stats}")
+
+    # 5. Detect Cell Events & Lineage Trees (Module 3 & 4)
+    df_events, event_summary = detect_cell_events(track_graph, total_frames=total_frames)
+    family_trees = build_lineage_family_trees(track_graph)
+    print(f"[Main] Lineage Summary: {event_summary}")
+
+    # Print Cell Counts
     counts = get_frame_cell_counts(tracked_masks)
     print_cell_statistics(counts)
 
-    # 5. Static Plot Comparison
+    # Export CSV datasets if requested
+    if args.export_csv:
+        df_morphology.to_csv("cell_morphology.csv", index=False)
+        df_events.to_csv("cell_events.csv", index=False)
+        print("[Main] Exported 'cell_morphology.csv' and 'cell_events.csv' successfully!")
+
+    # 6. Static Plot Visualizations
     plot_frame_comparison(
         masks=masks,
         tracked_masks=tracked_masks,
@@ -53,7 +74,10 @@ def main():
         show=not args.no_show
     )
 
-    # 6. Interactive Napari Viewer
+    if not args.no_show:
+        plot_morphology_distributions(df_morphology, show=True)
+
+    # 7. Interactive Napari Viewer
     if args.napari:
         launch_napari_viewer(masks=masks, tracked_masks=tracked_masks)
 
@@ -64,3 +88,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
