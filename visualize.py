@@ -184,6 +184,22 @@ def plot_motility_distributions(
         plt.close(fig)
 
 
+def export_animated_video(masks: np.ndarray, output_gif: str = "cell_tracking_video.gif", fps: int = 5):
+    """
+    Exports animated GIF video of time-lapse cell tracking.
+    """
+    from export_video import create_cell_tracking_video
+    return create_cell_tracking_video(masks, output_gif=output_gif, fps=fps)
+
+
+def export_web_visualizer():
+    """
+    Builds self-contained HTML5 interactive time-lapse video player dashboard.
+    """
+    from generate_web_visualizer import build_web_visualizer
+    return build_web_visualizer()
+
+
 if __name__ == "__main__":
     # Test Matplotlib plot generation with dummy data
     dummy_masks = np.random.randint(0, 10, size=(2, 100, 100))

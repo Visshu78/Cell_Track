@@ -26,6 +26,8 @@ def parse_args():
     parser.add_argument("--subset", type=int, default=None, help="Process only first N time frames for testing")
     parser.add_argument("--save-plot", type=str, default=None, help="Filepath to save frame comparison figure")
     parser.add_argument("--export-csv", action="store_true", help="Export morphology, lineage, and behavior datasets to CSV")
+    parser.add_argument("--export-video", action="store_true", help="Export time-lapse animated video GIF ('cell_tracking_video.gif')")
+    parser.add_argument("--web-viewer", action="store_true", help="Build interactive HTML5 time-lapse video player dashboard ('cell_tracker_viewer.html')")
     parser.add_argument("--napari", action="store_true", help="Launch interactive Napari viewer after tracking")
     parser.add_argument("--no-show", action="store_true", help="Do not display Matplotlib pop-up windows")
     return parser.parse_args()
@@ -77,6 +79,15 @@ def main():
         df_events.to_csv("cell_events.csv", index=False)
         df_kinematics.to_csv("cell_behavior.csv", index=False)
         print("[Main] Exported 'cell_morphology.csv', 'cell_events.csv', and 'cell_behavior.csv' successfully!")
+
+    # Video & Web Visualizer Exports
+    if args.export_video:
+        from visualize import export_animated_video
+        export_animated_video(tracked_masks)
+
+    if args.web_viewer:
+        from visualize import export_web_visualizer
+        export_web_visualizer()
 
     # 7. Static Plot Visualizations
     plot_frame_comparison(

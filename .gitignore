@@ -11,6 +11,7 @@ trackastra_models/
 *.npz
 *.pt
 *.csv
+!eda_results/*.csv
 
 
 # Python Byte-compiled / cache

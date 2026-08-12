@@ -64,5 +64,21 @@
 | **Data Ingestion** | [config.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/config.py), [data_loader.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/data_loader.py) | `Pooch`, `masks_pred.npz` retrieval |
 | **Cell Perception & Model Initialization** | [model_loader.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/model_loader.py) | Trackastra `general_2d` Vision Transformer weights |
 | **Cell Tracking & Association** | [tracker.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/tracker.py) | `Trackastra.track()`, candidate graph association |
-| **Visualization & Inspection** | [visualize.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/visualize.py) | `Matplotlib` static plots, `Napari` 4D interactive viewer |
-| **Pipeline Integration** | [main.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/main.py) | End-to-end execution & per-frame cell statistics |
+| **Visualization & Video Player** | [visualize.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/visualize.py), [export_video.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/export_video.py), [generate_web_visualizer.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/generate_web_visualizer.py) | Animated GIF exporter & HTML5 interactive video player |
+| **Exploratory Data Analysis (EDA)** | [eda.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/eda.py) | Multi-panel morphology, spatial density, and kinematic analytics |
+| **Pipeline Integration** | [main.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/main.py) | End-to-end execution, CSV export & video flags |
+
+---
+
+## 🎬 Quick Usage
+
+```bash
+# 1. Run Pipeline with Video & Web Viewer Export
+python main.py --export-csv --export-video --web-viewer
+
+# 2. Run Exploratory Data Analysis (EDA)
+python eda.py
+
+# 3. Launch Interactive Time-Lapse Web Video Player
+# Open cell_tracker_viewer.html in any web browser
+```
