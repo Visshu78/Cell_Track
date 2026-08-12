@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--export-csv", action="store_true", help="Export morphology, lineage, and behavior datasets to CSV")
     parser.add_argument("--export-video", action="store_true", help="Export time-lapse animated video GIF ('cell_tracking_video.gif')")
     parser.add_argument("--web-viewer", action="store_true", help="Build interactive HTML5 time-lapse video player dashboard ('cell_tracker_viewer.html')")
+    parser.add_argument("--cluster", action="store_true", help="Perform unsupervised cell phenotyping & PCA clustering")
     parser.add_argument("--napari", action="store_true", help="Launch interactive Napari viewer after tracking")
     parser.add_argument("--no-show", action="store_true", help="Do not display Matplotlib pop-up windows")
     return parser.parse_args()
@@ -79,6 +80,12 @@ def main():
         df_events.to_csv("cell_events.csv", index=False)
         df_kinematics.to_csv("cell_behavior.csv", index=False)
         print("[Main] Exported 'cell_morphology.csv', 'cell_events.csv', and 'cell_behavior.csv' successfully!")
+
+    # Phenotyping & Clustering
+    if args.cluster:
+        from phenotyping import perform_cell_phenotyping
+        _, pheno_summary = perform_cell_phenotyping(df_kinematics=df_kinematics)
+        print(f"[Main] Unsupervised Phenotyping Summary: {pheno_summary}")
 
     # Video & Web Visualizer Exports
     if args.export_video:

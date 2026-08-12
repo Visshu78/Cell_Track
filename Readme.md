@@ -66,19 +66,23 @@
 | **Cell Tracking & Association** | [tracker.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/tracker.py) | `Trackastra.track()`, candidate graph association |
 | **Visualization & Video Player** | [visualize.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/visualize.py), [export_video.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/export_video.py), [generate_web_visualizer.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/generate_web_visualizer.py) | Animated GIF exporter & HTML5 interactive video player |
 | **Exploratory Data Analysis (EDA)** | [eda.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/eda.py) | Multi-panel morphology, spatial density, and kinematic analytics |
-| **Pipeline Integration** | [main.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/main.py) | End-to-end execution, CSV export & video flags |
+| **Unsupervised Cell Phenotyping** | [phenotyping.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/phenotyping.py) | PCA projection, K-Means clustering, and cell state discovery |
+| **Pipeline Integration** | [main.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/main.py) | End-to-end execution, CSV export, video flags & phenotyping |
 
 ---
 
 ## 🎬 Quick Usage
 
 ```bash
-# 1. Run Pipeline with Video & Web Viewer Export
-python main.py --export-csv --export-video --web-viewer
+# 1. Run Pipeline with Video, Web Viewer & Phenotyping Clustering
+python main.py --export-csv --export-video --web-viewer --cluster
 
-# 2. Run Exploratory Data Analysis (EDA)
+# 2. Run Standalone Cell Phenotyping & PCA Clustering
+python phenotyping.py
+
+# 3. Run Exploratory Data Analysis (EDA)
 python eda.py
 
-# 3. Launch Interactive Time-Lapse Web Video Player
+# 4. Launch Interactive Time-Lapse Web Video Player
 # Open cell_tracker_viewer.html in any web browser
 ```
