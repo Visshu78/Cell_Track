@@ -84,7 +84,7 @@ def main():
     # Phenotyping & Clustering
     if args.cluster:
         from phenotyping import perform_cell_phenotyping
-        _, pheno_summary = perform_cell_phenotyping(df_kinematics=df_kinematics)
+        _, pheno_summary = perform_cell_phenotyping(df_kinematics=df_kinematics, df_morphology=df_morphology)
         print(f"[Main] Unsupervised Phenotyping Summary: {pheno_summary}")
 
     # Video & Web Visualizer Exports

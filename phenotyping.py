@@ -86,6 +86,7 @@ def auto_annotate_clusters(df_clustered: pd.DataFrame, num_clusters: int) -> dic
 
 def perform_cell_phenotyping(
     df_kinematics: pd.DataFrame = None,
+    df_morphology: pd.DataFrame = None,
     num_clusters: int = 3,
     output_dir: str = "phenotyping_results"
 ) -> tuple[pd.DataFrame, dict]:
@@ -95,30 +96,33 @@ def perform_cell_phenotyping(
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    if df_kinematics is None or df_kinematics.empty:
+    if (df_kinematics is None or df_kinematics.empty) and (df_morphology is None or df_morphology.empty):
         print("[Phenotyping] Extracting dataset features for phenotyping...")
         masks = load_masks()
         model = get_trackastra_model()
         tracked_masks, _ = run_cell_tracking(masks=masks, model=model)
         df_morphology = extract_dataset_morphology(tracked_masks)
         df_kinematics = compute_cell_kinematics(df_morphology)
-    else:
-        masks = load_masks()
-        tracked_masks = masks  # default fallback if morphology needed
+    elif df_kinematics is None or df_kinematics.empty:
+        df_kinematics = compute_cell_kinematics(df_morphology)
 
-    # Merge mean morphology per cell label into df_kinematics
+    # Determine cell ID column name
     if "label_id" in df_kinematics.columns:
         cell_id_col = "label_id"
     else:
         cell_id_col = "cell_id"
 
-    # Compute per-cell mean morphometrics
-    if 'df_morphology' in locals():
-        morph_means = df_morphology.groupby("label_id")[["area", "circularity", "eccentricity"]].mean().reset_index()
+    df_feat = df_kinematics.copy()
+
+    # Compute and merge per-cell mean morphometrics if available
+    if df_morphology is not None and not df_morphology.empty:
+        m_id_col = "label_id" if "label_id" in df_morphology.columns else "cell_id"
+        morph_means = df_morphology.groupby(m_id_col)[["area", "circularity", "eccentricity"]].mean().reset_index()
         morph_means.columns = [cell_id_col, "mean_area", "mean_circularity", "mean_eccentricity"]
-        df_feat = pd.merge(df_kinematics, morph_means, on=cell_id_col, how="inner")
-    else:
-        df_feat = df_kinematics.copy()
+        
+        # Merge if columns not already present
+        if "mean_area" not in df_feat.columns:
+            df_feat = pd.merge(df_feat, morph_means, on=cell_id_col, how="inner")
 
     if "directionality_ratio" in df_feat.columns and "directionality" not in df_feat.columns:
         df_feat["directionality"] = df_feat["directionality_ratio"]
