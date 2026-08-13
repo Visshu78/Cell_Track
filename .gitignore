@@ -26,3 +26,15 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Auto-generated HTML viewers (re-generate with their respective scripts)
+cell_tracker_viewer.html
+lineage_tree_viewer.html
+biotrackx_dashboard.html
+
+# Auto-generated video/animation outputs
+cell_tracking_video.gif
+
+# Runtime model outputs
+biotrack_x_uncertainty.npy
+*.npy
