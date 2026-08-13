@@ -31,6 +31,11 @@ def parse_args():
     parser.add_argument("--cluster", action="store_true", help="Perform unsupervised cell phenotyping & PCA clustering")
     parser.add_argument("--napari", action="store_true", help="Launch interactive Napari viewer after tracking")
     parser.add_argument("--no-show", action="store_true", help="Do not display Matplotlib pop-up windows")
+    parser.add_argument(
+        "--biotrackx", action="store_true",
+        help="Use BioTrack-X novel unified Spatio-Temporal Graph Transformer "
+             "instead of Trackastra for cell tracking inference."
+    )
     return parser.parse_args()
 
 
@@ -49,11 +54,16 @@ def main():
 
     total_frames = masks.shape[0]
 
-    # 2. Load Model
-    model = get_trackastra_model(model_name=args.model_name, device=args.device)
-
-    # 3. Perform Cell Tracking (Module 2)
-    tracked_masks, track_graph = run_cell_tracking(masks=masks, model=model)
+    # 2. Load Model & Run Tracking
+    if args.biotrackx:
+        # ── BioTrack-X Novel Architecture ───────────────────────────────────
+        from biotrack_x.inference import run_biotrackx_inference
+        print("[Main] Using BioTrack-X: Novel Unified Spatio-Temporal Graph Transformer")
+        tracked_masks, track_graph = run_biotrackx_inference(masks)
+    else:
+        # ── Trackastra Baseline ──────────────────────────────────────────────
+        model = get_trackastra_model(model_name=args.model_name, device=args.device)
+        tracked_masks, track_graph = run_cell_tracking(masks=masks, model=model)
 
     # 4. Extract Cell Morphology Metrics (Module 1)
     df_morphology = extract_dataset_morphology(tracked_masks)
