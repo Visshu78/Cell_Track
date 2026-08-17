@@ -4,23 +4,35 @@ Data loading utilities for cell tracking dataset using Pooch and NumPy.
 
 from pathlib import Path
 import numpy as np
-import pooch
+try:
+    import pooch
+except ImportError:
+    pooch = None
+
 from config import DATA_DIR, MASKS_DATASET_URL, MASKS_FILE_NAME
 
 
 def fetch_mask_dataset(data_dir: Path = DATA_DIR, url: str = MASKS_DATASET_URL, filename: str = MASKS_FILE_NAME) -> Path:
     """
-    Downloads or retrieves cached cell segmentation mask file via Pooch.
+    Downloads or retrieves cached cell segmentation mask file via Pooch or local folder.
     """
     data_dir.mkdir(parents=True, exist_ok=True)
-    mask_file_path = pooch.retrieve(
-        url=url,
-        fname=filename,
-        known_hash=None,
-        path=data_dir
-    )
-    print(f"[DataLoader] Mask file retrieved at: {mask_file_path}")
-    return Path(mask_file_path)
+    target_path = data_dir / filename
+    if target_path.exists():
+        return target_path
+
+    if pooch is not None:
+        mask_file_path = pooch.retrieve(
+            url=url,
+            fname=filename,
+            known_hash=None,
+            path=data_dir
+        )
+        print(f"[DataLoader] Mask file retrieved at: {mask_file_path}")
+        return Path(mask_file_path)
+
+    print(f"[DataLoader] pooch not installed; checking local directory: {target_path}")
+    return target_path
 
 
 def load_masks(file_path: Path = None) -> np.ndarray:

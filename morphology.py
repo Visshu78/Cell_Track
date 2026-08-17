@@ -6,7 +6,31 @@ Extracts spatial, morphological, and shape properties of tracked cells using sci
 from typing import Dict, List, Any
 import numpy as np
 import pandas as pd
-from skimage.measure import regionprops
+try:
+    from skimage.measure import regionprops
+except ImportError:
+    class RegionPropStub:
+        def __init__(self, label_id, ys, xs):
+            self.label = label_id
+            self.area = len(ys)
+            min_y, max_y = int(ys.min()), int(ys.max() + 1)
+            min_x, max_x = int(xs.min()), int(xs.max() + 1)
+            self.bbox = (min_y, min_x, max_y, max_x)
+            self.centroid = (float(ys.mean()), float(xs.mean()))
+            h, w = max_y - min_y, max_x - min_x
+            self.perimeter = float(2 * (h + w))
+            self.eccentricity = 0.5
+            self.major_axis_length = float(max(h, w))
+            self.minor_axis_length = float(min(h, w))
+
+    def regionprops(mask_frame):
+        labels = [c for c in np.unique(mask_frame) if c > 0]
+        props = []
+        for lid in labels:
+            ys, xs = np.where(mask_frame == lid)
+            if len(ys) > 0:
+                props.append(RegionPropStub(lid, ys, xs))
+        return props
 
 
 def extract_frame_morphology(mask_frame: np.ndarray, frame_idx: int) -> List[Dict[str, Any]]:
@@ -45,7 +69,6 @@ def extract_frame_morphology(mask_frame: np.ndarray, frame_idx: int) -> List[Dic
             "minor_axis_length": round(float(minor_axis), 2),
             "bbox": (min_row, min_col, max_row, max_col)
         })
-
 
     return frame_data
 

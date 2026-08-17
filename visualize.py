@@ -4,7 +4,10 @@ Visualization module for cell tracking results (Matplotlib & Napari).
 
 from typing import Optional
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 
 def plot_frame_comparison(
@@ -17,6 +20,10 @@ def plot_frame_comparison(
     """
     Plots a Matplotlib side-by-side comparison of original vs tracked cell masks for a specific frame.
     """
+    if plt is None:
+        print("[Visualize] Matplotlib not installed; skipping plot.")
+        return
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
     axes[0].imshow(masks[frame_idx], cmap="nipy_spectral")

@@ -7,9 +7,12 @@ env/
 # Data & Large Pretrained Models
 cell_tracking_data/
 trackastra_models/
+train-BF-C2DL-HSC/
+Test-BF-C2DL-HSC/
 *.zip
 *.npz
 *.pt
+*.pth
 *.csv
 !eda_results/*.csv
 !phenotyping_results/*.csv

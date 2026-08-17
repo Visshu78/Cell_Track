@@ -4,7 +4,11 @@ Tracking pipeline module using Trackastra model.
 
 from typing import Tuple, Dict, List, Optional
 import numpy as np
-from trackastra.model import Trackastra
+try:
+    from trackastra.model import Trackastra
+except ImportError:
+    class Trackastra:
+        pass
 from model_loader import get_trackastra_model
 from data_loader import load_masks
 

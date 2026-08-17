@@ -127,9 +127,13 @@ class BioTrackXLoss(nn.Module):
         if pred_centroids.shape[0] == 0 or gt_centroids.shape[0] == 0:
             return torch.tensor(0.0, requires_grad=True)
 
+        if gt_centroids.dim() == 3:
+            gt_centroids = gt_centroids.reshape(-1, 2)
+
         gt_norm = gt_centroids.float().clone()
-        gt_norm[:, 0] /= H  # normalize y
-        gt_norm[:, 1] /= W  # normalize x
+        if gt_norm.max() > 1.0:
+            gt_norm[:, 0] /= H  # normalize y
+            gt_norm[:, 1] /= W  # normalize x
 
         pred_idx, gt_idx = hungarian_match(pred_centroids.detach(), gt_norm)
         if len(pred_idx) == 0:
@@ -149,9 +153,19 @@ class BioTrackXLoss(nn.Module):
         gt_div_labels: torch.Tensor,      # (N,) binary ground-truth division labels
     ) -> torch.Tensor:
         """Binary cross-entropy loss for division detection."""
-        if div_probs.shape[0] == 0:
+        if div_probs.shape[0] == 0 or gt_div_labels.numel() == 0:
             return torch.tensor(0.0, requires_grad=True)
-        gt = gt_div_labels.float().unsqueeze(-1)  # (N, 1)
+
+        N_pred = div_probs.shape[0]
+        gt = gt_div_labels.flatten().float()
+
+        if gt.shape[0] < N_pred:
+            pad = torch.zeros(N_pred - gt.shape[0], device=gt.device)
+            gt = torch.cat([gt, pad])
+        elif gt.shape[0] > N_pred:
+            gt = gt[:N_pred]
+
+        gt = gt.unsqueeze(-1)
         return self.bce(div_probs, gt.detach())
 
     def compute_bio_loss(self, bio_costs: torch.Tensor) -> torch.Tensor:

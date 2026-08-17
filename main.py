@@ -36,6 +36,9 @@ def parse_args():
         help="Use BioTrack-X novel unified Spatio-Temporal Graph Transformer "
              "instead of Trackastra for cell tracking inference."
     )
+    parser.add_argument("--dataset", type=str, default="default", choices=["default", "ctc"], help="Dataset to load ('default' or 'ctc')")
+    parser.add_argument("--ctc-seq", type=str, default="01", choices=["01", "02"], help="CTC dataset sequence ('01' or '02')")
+    parser.add_argument("--clean-data", action="store_true", default=True, help="Perform data cleaning & debris filtering on input masks")
     return parser.parse_args()
 
 
@@ -47,10 +50,21 @@ def main():
     print("==================================================")
 
     # 1. Load Data
-    masks = load_masks()
-    if args.subset and args.subset > 0:
-        print(f"[Main] Subsetting dataset to first {args.subset} frames...")
-        masks = masks[:args.subset]
+    if args.dataset == "ctc":
+        from ctc_loader import load_ctc_gt_masks
+        print(f"[Main] Loading Cell Tracking Challenge (CTC) sequence {args.ctc_seq}...")
+        masks, _ = load_ctc_gt_masks(seq_name=args.ctc_seq, max_frames=args.subset, downsample_factor=2)
+    else:
+        masks = load_masks()
+        if args.subset and args.subset > 0:
+            print(f"[Main] Subsetting dataset to first {args.subset} frames...")
+            masks = masks[:args.subset]
+
+    # Data Cleaning & Preprocessing Step
+    if args.clean_data:
+        from data_cleaner import clean_mask_sequence
+        masks, clean_stats = clean_mask_sequence(masks, min_area=15, boundary_smoothing=True)
+        print(f"[Main] Data Cleaning Active: {clean_stats}")
 
     total_frames = masks.shape[0]
 
@@ -103,8 +117,8 @@ def main():
         export_animated_video(tracked_masks)
 
     if args.web_viewer:
-        from visualize import export_web_visualizer
-        export_web_visualizer()
+        from generate_web_visualizer import build_web_visualizer
+        build_web_visualizer()
 
     # 7. Static Plot Visualizations
     plot_frame_comparison(

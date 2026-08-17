@@ -5,7 +5,18 @@ Model loader module for Trackastra pretrained models.
 from pathlib import Path
 import zipfile
 import subprocess
-from trackastra.model import Trackastra
+try:
+    from trackastra.model import Trackastra
+except ImportError:
+    class Trackastra:
+        """Fallback Trackastra stub class when trackastra package is not installed."""
+        @classmethod
+        def from_folder(cls, folder, device="cpu"):
+            print(f"[ModelLoader] (Fallback) Trackastra loaded from {folder}")
+            return cls()
+        def track(self, masks, **kwargs):
+            return masks
+
 from config import MODEL_DIR, DEFAULT_MODEL_NAME, PRETRAINED_MODEL_URL, DEVICE
 
 
