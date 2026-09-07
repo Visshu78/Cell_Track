@@ -20,11 +20,14 @@ def detect_cell_events(track_graph: nx.DiGraph, total_frames: int) -> Tuple[pd.D
     continuity_count = 0
 
     for node in track_graph.nodes():
-        # Node format in Trackastra is typically (t, label_id) or string representation
         if isinstance(node, tuple) and len(node) >= 2:
-            frame, label_id = node[0], node[1]
+            frame, label_id = int(node[0]), int(node[1])
         else:
-            frame, label_id = None, str(node)
+            try:
+                label_id = int(node)
+            except (ValueError, TypeError):
+                label_id = str(node)
+            frame = 0
 
         in_edges = list(track_graph.in_edges(node))
         out_edges = list(track_graph.out_edges(node))
@@ -32,35 +35,51 @@ def detect_cell_events(track_graph: nx.DiGraph, total_frames: int) -> Tuple[pd.D
         in_deg = len(in_edges)
         out_deg = len(out_edges)
 
+        children = []
+        for u, v in out_edges:
+            c_id = v[1] if isinstance(v, tuple) and len(v) >= 2 else v
+            children.append(str(c_id))
+
+        parents = []
+        for u, v in in_edges:
+            p_id = u[1] if isinstance(u, tuple) and len(u) >= 2 else u
+            parents.append(str(p_id))
+
         event_type = "continuity"
+        details = f"Cell #{label_id} maintained continuous tracking trajectory."
 
         # Mitosis: 1 cell splits into 2 or more daughter cells
         if out_deg >= 2:
             event_type = "division"
             mitosis_count += 1
+            details = f"Parent Cell #{label_id} divided into Daughter Cells #{', #'.join(children)} at Frame {frame}."
 
         # Death: Cell disappears before final frame
         elif out_deg == 0 and frame is not None and frame < total_frames - 1:
             event_type = "death"
             death_count += 1
+            details = f"Cell #{label_id} disappeared / underwent apoptosis transition at Frame {frame}."
 
         # Appearance: New cell enters field after frame 0 without parent
         elif in_deg == 0 and frame is not None and frame > 0:
             event_type = "appearance"
             appearance_count += 1
+            details = f"New Cell #{label_id} entered field of view without parent lineage at Frame {frame}."
 
         else:
             continuity_count += 1
 
         events.append({
             "node": str(node),
-            "frame": frame,
+            "frame": frame if frame is not None else 0,
             "label_id": label_id,
+            "cell_id": label_id,
             "event_type": event_type,
             "in_degree": in_deg,
             "out_degree": out_deg,
-            "parents": [str(u) for u, v in in_edges],
-            "children": [str(v) for u, v in out_edges]
+            "parents": parents,
+            "children": children,
+            "details": details,
         })
 
     df_events = pd.DataFrame(events)

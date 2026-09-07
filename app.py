@@ -143,6 +143,17 @@ async def run_tracking(
             })
 
         events_list = df_events.to_dict(orient="records") if not df_events.empty else []
+        from database import extract_cell_id, extract_frame_idx, DatabaseManager
+        for ev in events_list:
+            c_id = extract_cell_id(ev)
+            f_idx = extract_frame_idx(ev)
+            ev["cell_id"] = c_id
+            ev["label_id"] = c_id
+            ev["frame"] = f_idx
+            ev["frame_index"] = f_idx
+            etype = str(ev.get("event_type", "continuity")).lower()
+            if not ev.get("details") or "N/A" in str(ev.get("details")):
+                ev["details"] = f"Cell #{c_id} {etype} at Frame {f_idx}."
 
         from disease_analyzer import DiseaseBiomarkerAnalyzer
         analyzer = DiseaseBiomarkerAnalyzer()
@@ -152,8 +163,21 @@ async def run_tracking(
             event_summary=event_summary,
         )
 
+        # Persist experiment run to SQLite database
+        db = DatabaseManager()
+        exp_id = db.save_experiment_run(
+            dataset_name=ds_canon,
+            seq_name=seq,
+            total_frames=T,
+            total_cells=len(events_list),
+            events=events_list,
+            frames_payload=frames_payload,
+            biomarkers=biomarkers,
+        )
+
         return JSONResponse({
             "status": "success",
+            "experiment_id": exp_id,
             "dataset": ds_canon,
             "seq": seq,
             "total_frames": T,
@@ -170,6 +194,18 @@ async def run_tracking(
     except Exception as e:
         import traceback
         traceback.print_exc()
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/history")
+async def get_tracking_history():
+    """Returns past tracking experiment records from SQLite database."""
+    try:
+        from database import DatabaseManager
+        db = DatabaseManager()
+        recent = db.get_recent_experiments(limit=15)
+        return JSONResponse({"status": "success", "history": recent})
+    except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 

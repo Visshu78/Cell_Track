@@ -63,17 +63,43 @@ class LLMBiologicalReporter:
             motility_state = "Quiescent / Low-Speed Stationary Phenotype"
 
         # Construct Chronological Event Timeline
+        from database import extract_cell_id, extract_frame_idx
         timeline_rows = []
         if events_list:
-            for ev in events_list[:15]:  # Top events
-                frame = ev.get("frame", ev.get("begin_frame", 0))
-                etype = ev.get("event_type", "Mitosis")
-                cid = ev.get("cell_id", ev.get("parent_id", "N/A"))
-                details = ev.get("details", f"Cell ID #{cid} underwent {etype.lower()} transition.")
-                timeline_rows.append(f"| **Frame {frame:02d}** | `{etype.upper()}` | Cell #{cid} | {details} |")
+            # Prioritize division, death, and appearance events
+            active_events = [ev for ev in events_list if str(ev.get("event_type", "")).lower() in ["division", "death", "appearance"]]
+            if not active_events:
+                # Fallback to distinct cell trajectories sorted chronologically
+                seen_keys = set()
+                active_events = []
+                sorted_events = sorted(events_list, key=lambda x: extract_frame_idx(x))
+                for ev in sorted_events:
+                    cid = extract_cell_id(ev)
+                    frame = extract_frame_idx(ev)
+                    key = (cid, frame)
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        active_events.append(ev)
+
+            for ev in active_events[:25]:
+                frame = extract_frame_idx(ev)
+                etype = str(ev.get("event_type", "CONTINUITY")).upper()
+                cid = extract_cell_id(ev)
+                details = ev.get("details")
+                if not details or "N/A" in str(details) or "None" in str(details):
+                    if etype == "DIVISION":
+                        details = f"Parent Cell #{cid} completed mitosis division."
+                    elif etype == "DEATH":
+                        details = f"Cell #{cid} underwent apoptosis / dropout at Frame {frame:02d}."
+                    elif etype == "APPEARANCE":
+                        details = f"New Cell #{cid} entered field of view at Frame {frame:02d}."
+                    else:
+                        details = f"Cell #{cid} maintained continuous tracking trajectory at Frame {frame:02d}."
+
+                timeline_rows.append(f"| **Frame {frame:02d}** | `{etype}` | Cell #{cid} | {details} |")
         
         if not timeline_rows:
-            timeline_rows.append("| **Frame 00-30** | `CONTINUITY` | Population | Continuous tracking maintained with zero dropouts. |")
+            timeline_rows.append(f"| **Frame 00-{total_frames:02d}** | `CONTINUITY` | Population | Continuous tracking maintained with zero dropouts across {total_frames} frames. |")
 
         timeline_str = "\n".join(timeline_rows)
 
