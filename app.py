@@ -76,9 +76,9 @@ async def get_datasets():
 
 @app.post("/api/track")
 async def run_tracking(
-    dataset: str = Form("BF-C2DL-HSC"),
+    dataset: str = Form("Fluo-N2DL-HeLa"),
     seq: str = Form("01"),
-    subset: int = Form(15),
+    subset: int = Form(25),
 ):
     """
     Runs BioTrack-X inference on a selected dataset and returns real-time tracking JSON payload.
@@ -104,6 +104,9 @@ async def run_tracking(
         df_kinematics = compute_cell_kinematics(df_morphology)
         behavior_summary = compute_population_behavior_summary(df_kinematics)
 
+        from ctc_loader import extract_division_labels_from_lineage
+        div_frames, parent_map = extract_division_labels_from_lineage(lineage_records, masks)
+
         # Build per-frame payload
         T, H, W = tracked_masks.shape
         frames_payload = []
@@ -119,11 +122,16 @@ async def run_tracking(
                     min_y, max_y = int(np.min(ys)), int(np.max(ys))
                     min_x, max_x = int(np.min(xs)), int(np.max(xs))
                     area = int(len(ys))
+                    is_dividing = (int(cid) in parent_map) and (div_frames.get(int(cid)) == t)
+                    daughters = parent_map.get(int(cid), []) if is_dividing else []
+
                     cells_info.append({
                         "cell_id": int(cid),
                         "centroid": [cy, cx],
                         "bbox": [min_y, min_x, max_y, max_x],
                         "area": area,
+                        "is_dividing": is_dividing,
+                        "daughters": daughters,
                     })
 
             frame_b64 = encode_array_to_base64(frame_mask)

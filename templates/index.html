@@ -381,8 +381,8 @@
       <div class="form-group">
         <label for="datasetSelect">Select Benchmark Dataset</label>
         <select id="datasetSelect">
+          <option value="Fluo-N2DL-HeLa" selected>Fluorescence Cancer Nuclei (Fluo-N2DL-HeLa)</option>
           <option value="BF-C2DL-HSC">Brightfield Stem Cells (BF-C2DL-HSC)</option>
-          <option value="Fluo-N2DL-HeLa">Fluorescence Cancer Nuclei (Fluo-N2DL-HeLa)</option>
           <option value="PhC-C2DL-PSC">Phase Contrast Stem Cells (PhC-C2DL-PSC)</option>
           <option value="Fluo-N2DH-SIM+">Fluorescence Simulated HeLa (Fluo-N2DH-SIM+)</option>
           <option value="Fluo-C2DL-MSC">Fluorescence Mesenchymal (Fluo-C2DL-MSC)</option>
@@ -399,7 +399,7 @@
 
       <div class="form-group">
         <label for="subsetInput">Temporal Window (Frames)</label>
-        <input type="number" id="subsetInput" value="15" min="5" max="50">
+        <input type="number" id="subsetInput" value="25" min="5" max="50">
       </div>
 
       <button id="runBtn" class="btn btn-primary">
@@ -608,15 +608,30 @@
           const w = max_x - min_x;
           const h = max_y - min_y;
 
-          // Bounding Box
-          ctx.strokeStyle = '#00f2fe';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(min_x, min_y, w, h);
+          if (cell.is_dividing) {
+            // Glowing Mitosis Bounding Box
+            ctx.strokeStyle = '#7f00ff';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#7f00ff';
+            ctx.shadowBlur = 10;
+            ctx.strokeRect(min_x, min_y, w, h);
+            ctx.shadowBlur = 0;
 
-          // Cell ID Tag
-          ctx.fillStyle = '#00f2fe';
-          ctx.font = '12px Inter, sans-serif';
-          ctx.fillText(`Cell #${cell.cell_id}`, min_x, Math.max(14, min_y - 4));
+            // Mitosis Tag
+            ctx.fillStyle = '#7f00ff';
+            ctx.font = 'bold 12px Inter, sans-serif';
+            ctx.fillText(`⚡ MITOSIS #${cell.cell_id} ➔ ${cell.daughters.join(',')}`, min_x, Math.max(14, min_y - 4));
+          } else {
+            // Standard Bounding Box
+            ctx.strokeStyle = '#00f2fe';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(min_x, min_y, w, h);
+
+            // Cell ID Tag
+            ctx.fillStyle = '#00f2fe';
+            ctx.font = '12px Inter, sans-serif';
+            ctx.fillText(`Cell #${cell.cell_id}`, min_x, Math.max(14, min_y - 4));
+          }
         });
       };
       img.src = frameData.image_b64;
