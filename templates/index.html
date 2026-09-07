@@ -415,9 +415,25 @@
 
     <!-- Middle Panel: Interactive Live Video Canvas Player -->
     <div class="card player-container">
-      <div class="card-title" style="width: 100%; justify-content: space-between;">
+      <div class="card-title" style="width: 100%; justify-content: space-between; flex-wrap: wrap;">
         <span>🎥 Live Trajectory & Mitosis Canvas Player</span>
         <span class="frame-badge" id="frameCounter">Frame: 0 / 0</span>
+      </div>
+
+      <!-- Decluttering Controls Bar -->
+      <div style="display: flex; gap: 1rem; width: 100%; font-size: 0.8rem; color: var(--text-muted); background: rgba(10,15,26,0.6); padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: var(--accent-cyan);">
+          <input type="checkbox" id="showBoxes" checked> Bounding Boxes
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #ff007f; font-weight: 600;">
+          <input type="checkbox" id="onlyMitosis" checked> Highlight Mitosis Only
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: var(--text-main);">
+          <input type="checkbox" id="showIDs"> Show All Cell IDs
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #10b981;">
+          <input type="checkbox" id="showCentroids" checked> Centroids
+        </label>
       </div>
 
       <div class="canvas-wrapper">
@@ -601,7 +617,13 @@
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // Draw Bounding Boxes & Trajectories
+        // Read Toggle States
+        const doShowBoxes = document.getElementById('showBoxes').checked;
+        const doOnlyMitosis = document.getElementById('onlyMitosis').checked;
+        const doShowIDs = document.getElementById('showIDs').checked;
+        const doShowCentroids = document.getElementById('showCentroids').checked;
+
+        // Draw Cells
         frameData.cells.forEach(cell => {
           const [cy, cx] = cell.centroid;
           const [min_y, min_x, max_y, max_x] = cell.bbox;
@@ -609,28 +631,65 @@
           const h = max_y - min_y;
 
           if (cell.is_dividing) {
-            // Glowing Mitosis Bounding Box
-            ctx.strokeStyle = '#7f00ff';
-            ctx.lineWidth = 3;
-            ctx.shadowColor = '#7f00ff';
-            ctx.shadowBlur = 10;
-            ctx.strokeRect(min_x, min_y, w, h);
-            ctx.shadowBlur = 0;
+            // High-Visibility Mitosis Division Rendering
+            if (doShowBoxes) {
+              ctx.strokeStyle = '#ff007f';
+              ctx.lineWidth = 3;
+              ctx.shadowColor = '#ff007f';
+              ctx.shadowBlur = 12;
+              ctx.strokeRect(min_x, min_y, w, h);
+              ctx.shadowBlur = 0;
+            }
 
-            // Mitosis Tag
-            ctx.fillStyle = '#7f00ff';
+            // Mitosis Pill Badge (Dark Background Box for 100% Readability)
+            const tagText = `⚡ MITOSIS #${cell.cell_id} ➔ ${cell.daughters.join(',')}`;
             ctx.font = 'bold 12px Inter, sans-serif';
-            ctx.fillText(`⚡ MITOSIS #${cell.cell_id} ➔ ${cell.daughters.join(',')}`, min_x, Math.max(14, min_y - 4));
-          } else {
-            // Standard Bounding Box
-            ctx.strokeStyle = '#00f2fe';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(min_x, min_y, w, h);
+            const textWidth = ctx.measureText(tagText).width;
+            
+            const pillX = min_x;
+            const pillY = Math.max(16, min_y - 8);
 
-            // Cell ID Tag
-            ctx.fillStyle = '#00f2fe';
-            ctx.font = '12px Inter, sans-serif';
-            ctx.fillText(`Cell #${cell.cell_id}`, min_x, Math.max(14, min_y - 4));
+            ctx.fillStyle = 'rgba(20, 0, 40, 0.9)';
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(pillX - 4, pillY - 14, textWidth + 12, 18, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ff007f';
+            ctx.fillText(tagText, pillX, pillY);
+
+          } else if (!doOnlyMitosis) {
+            // Standard Cell Rendering (When not filtered out)
+            if (doShowBoxes) {
+              ctx.strokeStyle = 'rgba(0, 242, 254, 0.5)';
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(min_x, min_y, w, h);
+            }
+
+            if (doShowIDs) {
+              const tagText = `#${cell.cell_id}`;
+              ctx.font = '11px JetBrains Mono, monospace';
+              const textWidth = ctx.measureText(tagText).width;
+
+              const pillX = min_x;
+              const pillY = Math.max(14, min_y - 4);
+
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+              ctx.fillRect(pillX - 2, pillY - 11, textWidth + 4, 13);
+
+              ctx.fillStyle = '#00f2fe';
+              ctx.fillText(tagText, pillX, pillY);
+            }
+          }
+
+          // Centroid Dots
+          if (doShowCentroids) {
+            ctx.fillStyle = cell.is_dividing ? '#ff007f' : '#10b981';
+            ctx.beginPath();
+            ctx.arc(cx, cy, cell.is_dividing ? 4 : 2.5, 0, Math.PI * 2);
+            ctx.fill();
           }
         });
       };
@@ -783,6 +842,13 @@
     };
 
     runBtn.onclick = runTracking;
+
+    ['showBoxes', 'onlyMitosis', 'showIDs', 'showCentroids'].forEach(id => {
+      document.getElementById(id).onchange = () => {
+        if (currentPayload) renderFrame(currentFrameIdx);
+      };
+    });
+
     window.onload = initCharts;
   </script>
 </body>
