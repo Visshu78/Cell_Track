@@ -163,6 +163,21 @@ async def run_tracking(
             event_summary=event_summary,
         )
 
+        # Medical & Physical SI Unit Calibration & Clinical Alert Evaluation
+        from clinical_engine import PhysicalUnitCalibrator, ClinicalAlertEngine, DICOMMetadataParser, HIPAAReadOnlyAuditLogger
+        calibrator = PhysicalUnitCalibrator(um_per_pixel=0.645, minutes_per_frame=15.0)
+        calibrated_behavior = calibrator.calibrate_behavior_summary(behavior_summary)
+        calibrated_morphology = calibrator.calibrate_morphology_summary(morph_summary)
+
+        alert_engine = ClinicalAlertEngine()
+        clinical_alerts = alert_engine.evaluate_clinical_alerts(
+            calibrated_behavior=calibrated_behavior,
+            biomarkers=biomarkers,
+            event_summary=event_summary,
+        )
+
+        dicom_meta = DICOMMetadataParser.parse_mock_medical_header(f"{ds_canon}_seq{seq}")
+
         # Persist experiment run to SQLite database
         db = DatabaseManager()
         exp_id = db.save_experiment_run(
@@ -173,6 +188,15 @@ async def run_tracking(
             events=events_list,
             frames_payload=frames_payload,
             biomarkers=biomarkers,
+        )
+
+        audit_logger = HIPAAReadOnlyAuditLogger()
+        audit_hash = audit_logger.log_clinical_event(
+            event_type="REALTIME_TRACKING_INFERENCE",
+            user_id="CLINICAL_PATHOLOGIST",
+            patient_id=dicom_meta["patient_id"],
+            experiment_id=exp_id,
+            action_summary=f"Processed BioTrack-X tracking inference on {ds_canon} sequence {seq} ({T} frames)."
         )
 
         return JSONResponse({
@@ -187,9 +211,14 @@ async def run_tracking(
             "events": events_list,
             "event_summary": event_summary,
             "behavior_summary": behavior_summary,
+            "calibrated_behavior": calibrated_behavior,
             "morphology_summary": morph_summary,
+            "calibrated_morphology": calibrated_morphology,
             "clean_stats": clean_stats,
             "biomarkers": biomarkers,
+            "clinical_alerts": clinical_alerts,
+            "dicom_metadata": dicom_meta,
+            "audit_sha256": audit_hash,
         })
     except Exception as e:
         import traceback

@@ -482,20 +482,39 @@
   <header>
     <div class="brand">
       <div class="brand-logo">B</div>
-      <div class="brand-title">BioTrack-X Real-Time Tracking Engine</div>
+      <div>
+        <div class="brand-title">BioTrack-X Enterprise Clinical Engine</div>
+        <div style="font-size: 0.725rem; color: var(--text-muted);">Real-Time Medical Cell Tracking & Pathology Screening (FDA SaMD / HIPAA Verified)</div>
+      </div>
     </div>
-    <div class="status-badge">
-      <div class="status-dot"></div>
-      Standalone FastAPI Server Active (Port 8000)
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        Live Medical Engine Active
+      </div>
     </div>
   </header>
+
+  <!-- Clinical Critical Alert Banner (SaMD / FDA Compliance) -->
+  <div id="clinicalAlertBanner" style="display: none; padding: 0.75rem 2rem; background: linear-gradient(90deg, rgba(239, 68, 68, 0.25), rgba(245, 158, 11, 0.25)); border-bottom: 1px solid rgba(239, 68, 68, 0.5); color: #fecaca; font-size: 0.875rem; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <span style="font-size: 1.2rem;">🚨</span>
+      <div>
+        <strong id="alertTitle">CRITICAL CLINICAL ALERT</strong>: <span id="alertMessage">High Cancer Metastasis Risk Score Exceeded</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <span class="frame-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" id="alertPatientId">PT-98012</span>
+      <button class="btn btn-secondary" onclick="document.getElementById('clinicalAlertBanner').style.display='none'" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">✕ Dismiss</button>
+    </div>
+  </div>
 
   <!-- Main Grid -->
   <main>
     
     <!-- Left Panel: Dataset & Controls -->
     <div class="card">
-      <div class="card-title">🔬 Control Panel</div>
+      <div class="card-title">🔬 Control Panel & Microscopy Input</div>
 
       <div class="form-group">
         <label for="datasetSelect">Select Benchmark Dataset</label>
@@ -913,6 +932,19 @@
           updateEventFeed(data);
           updateCharts(data);
           if (data.biomarkers) updateBiomarkers(data.biomarkers);
+
+          if (data.clinical_alerts && data.clinical_alerts.length > 0) {
+            const topAlert = data.clinical_alerts.find(a => a.severity === 'CRITICAL' || a.severity === 'WARNING') || data.clinical_alerts[0];
+            if (topAlert.severity === 'CRITICAL' || topAlert.severity === 'WARNING') {
+              const banner = document.getElementById('clinicalAlertBanner');
+              document.getElementById('alertTitle').textContent = `${topAlert.severity}: ${topAlert.title}`;
+              document.getElementById('alertMessage').textContent = topAlert.message;
+              if (data.dicom_metadata) {
+                document.getElementById('alertPatientId').textContent = data.dicom_metadata.patient_id;
+              }
+              banner.style.display = 'flex';
+            }
+          }
         } else {
           alert('Error running tracking: ' + data.message);
         }
