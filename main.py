@@ -36,7 +36,10 @@ def parse_args():
         help="Use BioTrack-X novel unified Spatio-Temporal Graph Transformer "
              "instead of Trackastra for cell tracking inference."
     )
-    parser.add_argument("--dataset", type=str, default="default", choices=["default", "ctc"], help="Dataset to load ('default' or 'ctc')")
+    parser.add_argument(
+        "--dataset", type=str, default="ctc",
+        help="Dataset to load ('default', 'ctc'/'hsc', 'fluo-hela', 'phc-psc', 'fluo-sim', 'fluo-msc')"
+    )
     parser.add_argument("--ctc-seq", type=str, default="01", choices=["01", "02"], help="CTC dataset sequence ('01' or '02')")
     parser.add_argument("--clean-data", action="store_true", default=True, help="Perform data cleaning & debris filtering on input masks")
     return parser.parse_args()
@@ -50,10 +53,11 @@ def main():
     print("==================================================")
 
     # 1. Load Data
-    if args.dataset == "ctc":
-        from ctc_loader import load_ctc_gt_masks
-        print(f"[Main] Loading Cell Tracking Challenge (CTC) sequence {args.ctc_seq}...")
-        masks, _ = load_ctc_gt_masks(seq_name=args.ctc_seq, max_frames=args.subset, downsample_factor=2)
+    if args.dataset != "default":
+        from ctc_loader import load_ctc_gt_masks, resolve_ctc_dataset
+        ds_name = resolve_ctc_dataset(args.dataset)
+        print(f"[Main] Loading Cell Tracking Challenge dataset '{ds_name}', sequence {args.ctc_seq}...")
+        masks, _ = load_ctc_gt_masks(seq_name=args.ctc_seq, dataset_name=ds_name, max_frames=args.subset, downsample_factor=2)
     else:
         masks = load_masks()
         if args.subset and args.subset > 0:
