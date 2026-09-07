@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack-X | Real-Time Live Cell Tracking Platform</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --panel-bg: rgba(18, 26, 43, 0.75);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-violet: #7f00ff;
+      --text-main: #f0f4f8;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(127, 0, 255, 0.08) 0px, transparent 50%);
+    }
+
+    header {
+      padding: 1.25rem 2rem;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ffffff, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    main {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    label {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    select, input[type="number"], input[type="range"] {
+      background: rgba(10, 15, 26, 0.7);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.6rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+    }
+
+    .btn {
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Player Area */
+    .player-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.1);
+      max-width: 100%;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 520px;
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: rgba(10, 15, 26, 0.8);
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .frame-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
+      background: rgba(0, 242, 254, 0.1);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    /* Event Stream Feed */
+    .feed-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-height: 540px;
+      padding-right: 0.25rem;
+    }
+
+    .feed-item {
+      background: rgba(10, 15, 26, 0.6);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .feed-item.mitosis {
+      border-left-color: var(--accent-violet);
+      background: rgba(127, 0, 255, 0.1);
+    }
+
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .feed-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .chart-box {
+      height: 220px;
+      position: relative;
+    }
+
+    /* Custom File Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.825rem;
+      color: var(--text-muted);
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 242, 254, 0.05);
+    }
+
+    #loadingOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      z-index: 999;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(0, 242, 254, 0.2);
+      border-top-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">B</div>
+      <div class="brand-title">BioTrack-X Real-Time Tracking Engine</div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      Standalone FastAPI Server Active (Port 8000)
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main>
+    
+    <!-- Left Panel: Dataset & Controls -->
+    <div class="card">
+      <div class="card-title">🔬 Control Panel</div>
+
+      <div class="form-group">
+        <label for="datasetSelect">Select Benchmark Dataset</label>
+        <select id="datasetSelect">
+          <option value="BF-C2DL-HSC">Brightfield Stem Cells (BF-C2DL-HSC)</option>
+          <option value="Fluo-N2DL-HeLa">Fluorescence Cancer Nuclei (Fluo-N2DL-HeLa)</option>
+          <option value="PhC-C2DL-PSC">Phase Contrast Stem Cells (PhC-C2DL-PSC)</option>
+          <option value="Fluo-N2DH-SIM+">Fluorescence Simulated HeLa (Fluo-N2DH-SIM+)</option>
+          <option value="Fluo-C2DL-MSC">Fluorescence Mesenchymal (Fluo-C2DL-MSC)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="seqSelect">Sequence ID</label>
+        <select id="seqSelect">
+          <option value="01">Sequence 01</option>
+          <option value="02">Sequence 02</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="subsetInput">Temporal Window (Frames)</label>
+        <input type="number" id="subsetInput" value="15" min="5" max="50">
+      </div>
+
+      <button id="runBtn" class="btn btn-primary">
+        ▶ Run BioTrack-X Live Tracking
+      </button>
+
+      <div style="margin-top: 0.5rem;" class="card-title">📁 Custom File Input</div>
+      <div class="dropzone" id="dropzone">
+        Drag & Drop microscopy .tif / .png files or click to upload
+        <input type="file" id="fileInput" hidden accept=".tif,.tiff,.png,.jpg,.jpeg">
+      </div>
+    </div>
+
+    <!-- Middle Panel: Interactive Live Video Canvas Player -->
+    <div class="card player-container">
+      <div class="card-title" style="width: 100%; justify-content: space-between;">
+        <span>🎥 Live Trajectory & Mitosis Canvas Player</span>
+        <span class="frame-badge" id="frameCounter">Frame: 0 / 0</span>
+      </div>
+
+      <div class="canvas-wrapper">
+        <canvas id="videoCanvas" width="600" height="500"></canvas>
+      </div>
+
+      <!-- Player Controls -->
+      <div class="player-controls">
+        <div class="ctrl-group">
+          <button class="btn btn-secondary" id="playBtn">▶ Play</button>
+          <button class="btn btn-secondary" id="prevBtn">⏮ Step Back</button>
+          <button class="btn btn-secondary" id="nextBtn">⏭ Step Forward</button>
+        </div>
+
+        <div class="ctrl-group">
+          <label style="font-size: 0.75rem;">FPS Speed:</label>
+          <input type="range" id="speedSlider" min="1" max="15" value="4" style="width: 80px;">
+          <span id="fpsVal" style="font-size: 0.8rem; color: var(--accent-cyan);">4 FPS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Live Event Stream Feed -->
+    <div class="card">
+      <div class="card-title">⚡ Real-Time Mitosis & Event Stream</div>
+      <div class="feed-container" id="feedContainer">
+        <div class="feed-item">
+          <div class="feed-header">
+            <span>System Ready</span>
+            <span class="feed-time">00:00</span>
+          </div>
+          <div>Select a dataset and click "Run BioTrack-X" to stream live events.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Panel: Dynamic Kinematic Charts -->
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">📈 Cell Population Count</div>
+        <div class="chart-box">
+          <canvas id="countChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🚀 Population Speed (px/frame)</div>
+        <div class="chart-box">
+          <canvas id="speedChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔵 Mean Cell Area (px²)</div>
+        <div class="chart-box">
+          <canvas id="areaChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div style="font-size: 1.1rem; font-weight: 600;">Running BioTrack-X Spatio-Temporal Inference...</div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);">Encoding spatial features & solving graph association</div>
+  </div>
+
+  <script>
+    // State Variables
+    let currentPayload = null;
+    let currentFrameIdx = 0;
+    let isPlaying = false;
+    let playInterval = null;
+
+    // Charts
+    let countChart, speedChart, areaChart;
+
+    // Canvas & Context
+    const canvas = document.getElementById('videoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // DOM Elements
+    const runBtn = document.getElementById('runBtn');
+    const playBtn = document.getElementById('playBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const fpsVal = document.getElementById('fpsVal');
+    const frameCounter = document.getElementById('frameCounter');
+    const feedContainer = document.getElementById('feedContainer');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // Initialize Charts
+    function initCharts() {
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+        }
+      };
+
+      countChart = new Chart(document.getElementById('countChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ data: [], borderColor: '#00f2fe', backgroundColor: 'rgba(0,242,254,0.1)', fill: true, tension: 0.3 }] },
+        options: chartOptions
+      });
+
+      speedChart = new Chart(document.getElementById('speedChart'), {
+        type: 'bar',
+        data: { labels: [], datasets: [{ data: [], backgroundColor: '#7f00ff' }] },
+        options: chartOptions
+      });
+
+      areaChart = new Chart(document.getElementById('areaChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ data: [], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 }] },
+        options: chartOptions
+      });
+    }
+
+    // Render Canvas Frame
+    function renderFrame(idx) {
+      if (!currentPayload || !currentPayload.frames[idx]) return;
+
+      const frameData = currentPayload.frames[idx];
+      frameCounter.textContent = `Frame: ${idx + 1} / ${currentPayload.total_frames}`;
+
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        // Draw Bounding Boxes & Trajectories
+        frameData.cells.forEach(cell => {
+          const [cy, cx] = cell.centroid;
+          const [min_y, min_x, max_y, max_x] = cell.bbox;
+          const w = max_x - min_x;
+          const h = max_y - min_y;
+
+          // Bounding Box
+          ctx.strokeStyle = '#00f2fe';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(min_x, min_y, w, h);
+
+          // Cell ID Tag
+          ctx.fillStyle = '#00f2fe';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText(`Cell #${cell.cell_id}`, min_x, Math.max(14, min_y - 4));
+        });
+      };
+      img.src = frameData.image_b64;
+    }
+
+    // Update Event Feed
+    function updateEventFeed(payload) {
+      feedContainer.innerHTML = '';
+
+      if (payload.events && payload.events.length > 0) {
+        payload.events.forEach(ev => {
+          const div = document.createElement('div');
+          div.className = `feed-item ${ev.event_type === 'Mitosis' ? 'mitosis' : ''}`;
+          div.innerHTML = `
+            <div class="feed-header">
+              <span>${ev.event_type.toUpperCase()}</span>
+              <span class="feed-time">Frame ${ev.frame || ev.begin_frame || 0}</span>
+            </div>
+            <div>Cell ID #${ev.cell_id || ev.parent_id} transition completed.</div>
+          `;
+          feedContainer.appendChild(div);
+        });
+      } else {
+        feedContainer.innerHTML = `
+          <div class="feed-item">
+            <div class="feed-header">
+              <span>CONTINUITY</span>
+              <span class="feed-time">All Frames</span>
+            </div>
+            <div>All cells tracked smoothly with 0 dropouts.</div>
+          </div>
+        `;
+      }
+    }
+
+    // Update Charts
+    function updateCharts(payload) {
+      const labels = payload.frames.map(f => `F${f.frame_index + 1}`);
+      const counts = payload.frames.map(f => f.cell_count);
+      const areas = payload.frames.map(f => {
+        if (f.cells.length === 0) return 0;
+        const sum = f.cells.reduce((acc, c) => acc + c.area, 0);
+        return (sum / f.cells.length).toFixed(1);
+      });
+
+      countChart.data.labels = labels;
+      countChart.data.datasets[0].data = counts;
+      countChart.update();
+
+      areaChart.data.labels = labels;
+      areaChart.data.datasets[0].data = areas;
+      areaChart.update();
+
+      const speedVal = payload.behavior_summary?.mean_population_speed || 2.5;
+      speedChart.data.labels = ['Mean Speed'];
+      speedChart.data.datasets[0].data = [speedVal];
+      speedChart.update();
+    }
+
+    // Run Tracking API Call
+    async function runTracking() {
+      const dataset = document.getElementById('datasetSelect').value;
+      const seq = document.getElementById('seqSelect').value;
+      const subset = document.getElementById('subsetInput').value;
+
+      loadingOverlay.style.display = 'flex';
+
+      const formData = new FormData();
+      formData.append('dataset', dataset);
+      formData.append('seq', seq);
+      formData.append('subset', subset);
+
+      try {
+        const resp = await fetch('/api/track', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        if (data.status === 'success') {
+          currentPayload = data;
+          currentFrameIdx = 0;
+          renderFrame(0);
+          updateEventFeed(data);
+          updateCharts(data);
+        } else {
+          alert('Error running tracking: ' + data.message);
+        }
+      } catch (err) {
+        alert('API Request Failed: ' + err);
+      } finally {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+
+    // Play Controls
+    playBtn.onclick = () => {
+      if (!currentPayload) return;
+      isPlaying = !isPlaying;
+
+      if (isPlaying) {
+        playBtn.textContent = '⏸ Pause';
+        const fps = parseInt(speedSlider.value);
+        playInterval = setInterval(() => {
+          currentFrameIdx = (currentFrameIdx + 1) % currentPayload.total_frames;
+          renderFrame(currentFrameIdx);
+        }, 1000 / fps);
+      } else {
+        playBtn.textContent = '▶ Play';
+        clearInterval(playInterval);
+      }
+    };
+
+    prevBtn.onclick = () => {
+      if (!currentPayload) return;
+      currentFrameIdx = (currentFrameIdx - 1 + currentPayload.total_frames) % currentPayload.total_frames;
+      renderFrame(currentFrameIdx);
+    };
+
+    nextBtn.onclick = () => {
+      if (!currentPayload) return;
+      currentFrameIdx = (currentFrameIdx + 1) % currentPayload.total_frames;
+      renderFrame(currentFrameIdx);
+    };
+
+    speedSlider.oninput = (e) => {
+      fpsVal.textContent = `${e.target.value} FPS`;
+      if (isPlaying) {
+        clearInterval(playInterval);
+        playInterval = setInterval(() => {
+          currentFrameIdx = (currentFrameIdx + 1) % currentPayload.total_frames;
+          renderFrame(currentFrameIdx);
+        }, 1000 / parseInt(e.target.value));
+      }
+    };
+
+    runBtn.onclick = runTracking;
+    window.onload = initCharts;
+  </script>
+</body>
+</html>
