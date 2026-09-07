@@ -173,6 +173,34 @@ async def run_tracking(
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+@app.post("/api/generate-llm-report")
+async def generate_llm_report_api(
+    dataset: str = Form("Fluo-N2DL-HeLa"),
+    seq: str = Form("01"),
+    subset: int = Form(25),
+):
+    """
+    Generates a full AI LLM Biological Narrative Report with frame timestamps, cell analysis, and disease risk screening.
+    """
+    try:
+        sys.path.insert(0, ".")
+        from llm_reporter import LLMBiologicalReporter
+        reporter = LLMBiologicalReporter()
+        report_text = reporter.generate_report_from_dataset(
+            dataset_name=dataset,
+            seq_name=seq,
+            subset=subset,
+        )
+        return JSONResponse({
+            "status": "success",
+            "report_markdown": report_text,
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 @app.post("/api/upload")
 async def upload_custom_file(file: UploadFile = File(...)):
     """Accepts custom frame image or zip uploads for processing."""

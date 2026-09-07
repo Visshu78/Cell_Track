@@ -10,6 +10,93 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 15, 0.88);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem;
+    }
+
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 900px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 50px rgba(168, 85, 247, 0.25);
+      overflow: hidden;
+      animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.75rem;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 1.75rem;
+      overflow-y: auto;
+      font-size: 0.925rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+    }
+
+    .modal-body h1, .modal-body h2, .modal-body h3 {
+      color: #f8fafc;
+      margin-top: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .modal-body h1 { font-size: 1.4rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: #d8b4fe; }
+    .modal-body h2 { font-size: 1.15rem; color: var(--accent-cyan); }
+    .modal-body h3 { font-size: 1rem; color: var(--success); }
+
+    .modal-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+    }
+
+    .modal-body th, .modal-body td {
+      border: 1px solid var(--border-color);
+      padding: 0.6rem 0.85rem;
+      text-align: left;
+    }
+
+    .modal-body th {
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--accent-cyan);
+    }
+
+    .modal-body blockquote {
+      background: rgba(168, 85, 247, 0.1);
+      border-left: 4px solid #a855f7;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
 
   <style>
     :root {
@@ -404,6 +491,10 @@
 
       <button id="runBtn" class="btn btn-primary">
         ▶ Run BioTrack-X Live Tracking
+      </button>
+
+      <button id="reportBtn" class="btn btn-secondary" style="border-color: #a855f7; color: #d8b4fe; background: rgba(168, 85, 247, 0.15);">
+        🤖 Generate AI LLM Report
       </button>
 
       <div style="margin-top: 0.5rem;" class="card-title">📁 Custom File Input</div>
@@ -838,6 +929,84 @@
           currentFrameIdx = (currentFrameIdx + 1) % currentPayload.total_frames;
           renderFrame(currentFrameIdx);
         }, 1000 / parseInt(e.target.value));
+      }
+    };
+
+  <!-- AI LLM Biological Report Modal -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="font-weight: 700; font-size: 1.1rem; color: #d8b4fe; display: flex; align-items: center; gap: 0.5rem;">
+          🤖 BioTrack-X AI Biological Intelligence Report
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="btn btn-secondary" id="copyReportBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">📋 Copy Markdown</button>
+          <button class="btn btn-secondary" id="downloadReportBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">📥 Download (.md)</button>
+          <button class="btn btn-secondary" id="closeModalBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">✕ Close</button>
+        </div>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <div style="text-align: center; padding: 2rem;">Generating AI LLM Biological Narrative Report...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const reportBtn = document.getElementById('reportBtn');
+    const reportModal = document.getElementById('reportModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalBody = document.getElementById('modalBody');
+    const copyReportBtn = document.getElementById('copyReportBtn');
+    const downloadReportBtn = document.getElementById('downloadReportBtn');
+    let lastReportMarkdown = "";
+
+    reportBtn.onclick = async () => {
+      const dataset = document.getElementById('datasetSelect').value;
+      const seq = document.getElementById('seqSelect').value;
+      const subset = document.getElementById('subsetInput').value;
+
+      reportModal.style.display = 'flex';
+      modalBody.innerHTML = '<div style="text-align:center; padding: 3rem;"><div class="spinner" style="margin: 0 auto 1rem auto;"></div><div>Generating AI LLM Biological Narrative Report...</div><div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">Analyzing timestamps, mitosis division events, motility, and clinical biomarkers</div></div>';
+
+      const formData = new FormData();
+      formData.append('dataset', dataset);
+      formData.append('seq', seq);
+      formData.append('subset', subset);
+
+      try {
+        const resp = await fetch('/api/generate-llm-report', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        if (data.status === 'success') {
+          lastReportMarkdown = data.report_markdown;
+          modalBody.innerHTML = marked.parse(data.report_markdown);
+        } else {
+          modalBody.innerHTML = `<div style="color:var(--danger); padding:2rem;">Error generating report: ${data.message}</div>`;
+        }
+      } catch (err) {
+        modalBody.innerHTML = `<div style="color:var(--danger); padding:2rem;">Failed to fetch report: ${err}</div>`;
+      }
+    };
+
+    closeModalBtn.onclick = () => {
+      reportModal.style.display = 'none';
+    };
+
+    copyReportBtn.onclick = () => {
+      if (lastReportMarkdown) {
+        navigator.clipboard.writeText(lastReportMarkdown);
+        alert('Report copied to clipboard!');
+      }
+    };
+
+    downloadReportBtn.onclick = () => {
+      if (lastReportMarkdown) {
+        const blob = new Blob([lastReportMarkdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'biotrackx_llm_biological_report.md';
+        a.click();
       }
     };
 
