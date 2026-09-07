@@ -85,10 +85,27 @@ def get_dataset_root(dataset_key: str = "BF-C2DL-HSC", auto_download: bool = Tru
     extract_parent.mkdir(parents=True, exist_ok=True)
 
     zip_path = extract_parent / zip_name
-    if not zip_path.exists():
+    if not zip_path.exists() or zip_path.stat().st_size == 0:
         print(f"[CTCLoader] Downloading CTC dataset '{canon_key}' from {meta['url']}...")
-        urllib.request.urlretrieve(meta["url"], zip_path)
-        print(f"[CTCLoader] Download complete: {zip_path}")
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                req = urllib.request.Request(meta["url"], headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=60) as resp, open(zip_path, "wb") as out_file:
+                    chunk_size = 1024 * 1024  # 1 MB chunks
+                    while True:
+                        chunk = resp.read(chunk_size)
+                        if not chunk:
+                            break
+                        out_file.write(chunk)
+                print(f"[CTCLoader] Download complete: {zip_path}")
+                break
+            except Exception as e:
+                print(f"[CTCLoader] Download attempt {attempt}/{max_retries} failed: {e}")
+                if zip_path.exists():
+                    zip_path.unlink()
+                if attempt == max_retries:
+                    raise e
 
     print(f"[CTCLoader] Extracting {zip_path}...")
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
