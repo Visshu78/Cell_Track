@@ -928,6 +928,7 @@
         playInterval = setInterval(() => {
           currentFrameIdx = (currentFrameIdx + 1) % currentPayload.total_frames;
           renderFrame(currentFrameIdx);
+        }, 1000 / parseInt(e.target.value));
       }
     };
   </script>
