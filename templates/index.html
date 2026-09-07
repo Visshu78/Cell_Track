@@ -440,9 +440,54 @@
       </div>
     </div>
 
-    <!-- Right Panel: Live Event Stream Feed -->
+    <!-- Right Panel: Live Event Stream Feed & Clinical Biomarker Diagnostic -->
     <div class="card">
-      <div class="card-title">⚡ Real-Time Mitosis & Event Stream</div>
+      <div class="card-title">🩺 Clinical Biomarker Diagnostic</div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);" id="diagnosticAssessment">Run tracking to evaluate disease risk profiles.</div>
+      
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <span>🎗️ Cancer Metastasis Risk:</span>
+            <strong id="cancerScore" style="color: var(--accent-cyan);">0%</strong>
+          </div>
+          <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 2px;">
+            <div id="cancerBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00f2fe, #ef4444); transition: width 0.5s;"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <span>💊 Mitotic Arrest (Drug Efficacy):</span>
+            <strong id="pharmaScore" style="color: var(--success);">0%</strong>
+          </div>
+          <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 2px;">
+            <div id="pharmaBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.5s;"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <span>🛡️ Autoimmune Chemotaxis:</span>
+            <strong id="autoimmuneScore" style="color: var(--warning);">0%</strong>
+          </div>
+          <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 2px;">
+            <div id="autoimmuneBar" style="width: 0%; height: 100%; background: #f59e0b; transition: width 0.5s;"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <span>🧠 Neurodegenerative Apoptosis:</span>
+            <strong id="neuroScore" style="color: #a855f7;">0%</strong>
+          </div>
+          <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 2px;">
+            <div id="neuroBar" style="width: 0%; height: 100%; background: #a855f7; transition: width 0.5s;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top: 0.5rem;">⚡ Real-Time Event Stream</div>
       <div class="feed-container" id="feedContainer">
         <div class="feed-item">
           <div class="feed-header">
@@ -631,6 +676,22 @@
       speedChart.update();
     }
 
+    function updateBiomarkers(b) {
+      if (!b) return;
+      document.getElementById('diagnosticAssessment').textContent = b.overall_assessment;
+      document.getElementById('cancerScore').textContent = `${b.cancer_metastasis_risk_pct}%`;
+      document.getElementById('cancerBar').style.width = `${b.cancer_metastasis_risk_pct}%`;
+
+      document.getElementById('pharmaScore').textContent = `${b.mitotic_arrest_index_pct}%`;
+      document.getElementById('pharmaBar').style.width = `${b.mitotic_arrest_index_pct}%`;
+
+      document.getElementById('autoimmuneScore').textContent = `${b.autoimmune_hyperactivity_pct}%`;
+      document.getElementById('autoimmuneBar').style.width = `${b.autoimmune_hyperactivity_pct}%`;
+
+      document.getElementById('neuroScore').textContent = `${b.neurodegenerative_apoptosis_pct}%`;
+      document.getElementById('neuroBar').style.width = `${b.neurodegenerative_apoptosis_pct}%`;
+    }
+
     // Run Tracking API Call
     async function runTracking() {
       const dataset = document.getElementById('datasetSelect').value;
@@ -654,6 +715,7 @@
           renderFrame(0);
           updateEventFeed(data);
           updateCharts(data);
+          if (data.biomarkers) updateBiomarkers(data.biomarkers);
         } else {
           alert('Error running tracking: ' + data.message);
         }

@@ -136,6 +136,14 @@ async def run_tracking(
 
         events_list = df_events.to_dict(orient="records") if not df_events.empty else []
 
+        from disease_analyzer import DiseaseBiomarkerAnalyzer
+        analyzer = DiseaseBiomarkerAnalyzer()
+        biomarkers = analyzer.analyze_biomarkers(
+            behavior_summary=behavior_summary,
+            morphology_summary=morph_summary,
+            event_summary=event_summary,
+        )
+
         return JSONResponse({
             "status": "success",
             "dataset": ds_canon,
@@ -149,6 +157,7 @@ async def run_tracking(
             "behavior_summary": behavior_summary,
             "morphology_summary": morph_summary,
             "clean_stats": clean_stats,
+            "biomarkers": biomarkers,
         })
     except Exception as e:
         import traceback

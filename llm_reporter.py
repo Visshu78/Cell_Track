@@ -169,7 +169,14 @@ The following timeline details exact frame-by-frame cellular transitions, mitosi
         df_kinematics = compute_cell_kinematics(df_morphology)
         behavior_summary = compute_population_behavior_summary(df_kinematics)
 
-        events_list = df_events.to_dict(orient="records") if not df_events.empty else []
+        from disease_analyzer import DiseaseBiomarkerAnalyzer
+        analyzer = DiseaseBiomarkerAnalyzer()
+        biomarkers = analyzer.analyze_biomarkers(
+            behavior_summary=behavior_summary,
+            morphology_summary=morph_summary,
+            event_summary=event_summary,
+        )
+        diag_section = analyzer.generate_diagnostic_summary_markdown(biomarkers)
 
         report = self.generate_report_from_data(
             event_summary=event_summary,
@@ -179,6 +186,8 @@ The following timeline details exact frame-by-frame cellular transitions, mitosi
             dataset_name=f"{ds_canon} / Sequence {seq_name}",
             total_frames=masks.shape[0],
         )
+
+        report += "\n" + diag_section
 
         if output_file:
             Path(output_file).write_text(report, encoding="utf-8")
