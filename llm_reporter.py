@@ -169,6 +169,8 @@ The following timeline details exact frame-by-frame cellular transitions, mitosi
         df_kinematics = compute_cell_kinematics(df_morphology)
         behavior_summary = compute_population_behavior_summary(df_kinematics)
 
+        events_list = df_events.to_dict(orient="records") if not df_events.empty else []
+
         from disease_analyzer import DiseaseBiomarkerAnalyzer
         analyzer = DiseaseBiomarkerAnalyzer()
         biomarkers = analyzer.analyze_biomarkers(
@@ -177,6 +179,32 @@ The following timeline details exact frame-by-frame cellular transitions, mitosi
             event_summary=event_summary,
         )
         diag_section = analyzer.generate_diagnostic_summary_markdown(biomarkers)
+
+        # Check for Gemini API Key
+        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if gemini_key:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=gemini_key)
+                g_model = genai.GenerativeModel("gemini-1.5-flash")
+                prompt = (
+                    f"You are a Senior Computational Biologist & Pathologist analyzing live-cell tracking data.\n"
+                    f"Dataset: {ds_canon} / Sequence {seq_name}\n"
+                    f"Frames: {masks.shape[0]}\n"
+                    f"Morphology: {morph_summary}\n"
+                    f"Behavior Kinematics: {behavior_summary}\n"
+                    f"Lineage Events: {event_summary}\n"
+                    f"Disease Biomarker Diagnostic Scores: {biomarkers}\n"
+                    f"Please write a comprehensive, professional Markdown biological intelligence report summarizing executive proliferation status, chronological event timeline with frame timestamps, cell motility classification, and clinical disease takeaways."
+                )
+                g_resp = g_model.generate_content(prompt)
+                if g_resp and g_resp.text:
+                    report = g_resp.text
+                    if output_file:
+                        Path(output_file).write_text(report, encoding="utf-8")
+                    return report
+            except Exception as e:
+                print(f"[LLMReporter] Gemini API call notice: {e}")
 
         report = self.generate_report_from_data(
             event_summary=event_summary,
