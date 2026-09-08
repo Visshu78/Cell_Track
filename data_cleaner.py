@@ -110,6 +110,11 @@ def clean_mask_sequence(
         cleaned = filter_temporal_transients(cleaned, min_duration=min_duration)
 
     final_unique_cells = len(np.unique(cleaned)) - 1
+    if final_unique_cells <= 0 and initial_unique_cells > 0:
+        print("[DataCleaner] Safety Warning: Mask cleaning removed all cells. Reverting to raw masks for dataset integrity.")
+        cleaned = masks.copy()
+        final_unique_cells = initial_unique_cells
+
     removed_cells = initial_unique_cells - final_unique_cells
 
     stats = {

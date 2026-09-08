@@ -90,8 +90,16 @@ def compute_population_behavior_summary(df_kinematics: pd.DataFrame) -> Dict[str
     """
     Computes population-level migratory behavior metrics.
     """
-    if df_kinematics.empty:
-        return {}
+    if df_kinematics is None or df_kinematics.empty:
+        return {
+            "tracked_trajectories": 0,
+            "mean_population_speed": 0.0,
+            "median_population_speed": 0.0,
+            "mean_net_displacement": 0.0,
+            "mean_directionality_ratio": 1.0,
+            "directed_migration_index": 0.0,
+            "active_migratory_cell_pct": 0.0
+        }
 
     return {
         "tracked_trajectories": len(df_kinematics),

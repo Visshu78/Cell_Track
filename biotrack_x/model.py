@@ -346,11 +346,16 @@ class BioTrackX(nn.Module):
         )
 
         n_dividing = int(transformer_out["div_mask"].sum().item())
+        beta_val = erlang_stats.get('beta', 0.2)
+        beta_float = float(beta_val) if isinstance(beta_val, (int, float)) else 0.2
+        mean_age_val = erlang_stats.get('mean_age', 0.0)
+        mean_age_float = float(mean_age_val) if isinstance(mean_age_val, (int, float)) else 0.0
+
         print(f"[BioTrackX] Inference complete!")
         print(f"  Active queries     : {n_active}")
         print(f"  Predicted divisions: {n_dividing}")
-        print(f"  Mean cell age      : {erlang_stats['mean_age']:.1f} frames")
-        print(f"  Erlang beta (learned): {erlang_stats.get('beta', '?'):.4f}")
+        print(f"  Mean cell age      : {mean_age_float:.1f} frames")
+        print(f"  Erlang beta (learned): {beta_float:.4f}")
         print(f"  Graph nodes/edges  : {lineage_graph.number_of_nodes()} / "
               f"{lineage_graph.number_of_edges()}")
 
