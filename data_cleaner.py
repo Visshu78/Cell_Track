@@ -79,12 +79,82 @@ def filter_temporal_transients(masks: np.ndarray, min_duration: int = 2) -> np.n
     return cleaned_masks
 
 
+def bridge_temporal_mask_gaps(masks: np.ndarray, max_gap: int = 3, max_shift: float = 30.0) -> Tuple[np.ndarray, int]:
+    """
+    Long-Range Temporal Memory Bridge for Segmentation Masks:
+    Fills temporary cell dropouts (1 to max_gap frames) caused by laser focal drift
+    or temporary illumination dimming in long multi-day videos.
+    """
+    T, H, W = masks.shape
+    bridged_masks = masks.copy()
+    bridged_gaps_count = 0
+
+    # Collect frame appearances per cell label ID
+    cell_frames: Dict[int, list] = {}
+    for t in range(T):
+        for lid in np.unique(masks[t]):
+            if lid == 0:
+                continue
+            if lid not in cell_frames:
+                cell_frames[lid] = []
+            cell_frames[lid].append(t)
+
+    # Reconnect missing frames per cell ID
+    for lid, frame_list in cell_frames.items():
+        if len(frame_list) < 2:
+            continue
+        
+        for idx in range(len(frame_list) - 1):
+            t_start = frame_list[idx]
+            t_end = frame_list[idx + 1]
+            gap = t_end - t_start - 1
+
+            if 1 <= gap <= max_gap:
+                # Calculate spatial centroids at t_start and t_end
+                mask_start = (masks[t_start] == lid)
+                mask_end = (masks[t_end] == lid)
+
+                y_s, x_s = ndimage.center_of_mass(mask_start)
+                y_e, x_e = ndimage.center_of_mass(mask_end)
+
+                dist = np.sqrt((y_e - y_s)**2 + (x_e - x_s)**2)
+                
+                # Verify displacement is biologically plausible
+                if dist <= max_shift * (gap + 1):
+                    # Interpolate mask into missing gap frames
+                    for g in range(1, gap + 1):
+                        t_gap = t_start + g
+                        alpha = g / float(gap + 1)
+                        # Shifted centroid position
+                        y_g = int(round((1 - alpha) * y_s + alpha * y_e))
+                        x_g = int(round((1 - alpha) * x_s + alpha * x_e))
+
+                        # Create interpolated binary mask footprint from mask_start
+                        y_indices, x_indices = np.where(mask_start)
+                        y_rel = y_indices - int(round(y_s))
+                        x_rel = x_indices - int(round(x_s))
+
+                        y_new = np.clip(y_g + y_rel, 0, H - 1)
+                        x_new = np.clip(x_g + x_rel, 0, W - 1)
+
+                        # Write interpolated label only where frame is background (0)
+                        free_pixels = (bridged_masks[t_gap, y_new, x_new] == 0)
+                        bridged_masks[t_gap, y_new[free_pixels], x_new[free_pixels]] = lid
+
+                    bridged_gaps_count += 1
+
+    print(f"[DataCleaner] Long-Range Temporal Memory Bridge: Reconnected {bridged_gaps_count} multi-frame dropouts (gap <= {max_gap} frames)")
+    return bridged_masks, bridged_gaps_count
+
+
 def clean_mask_sequence(
     masks: np.ndarray,
     min_area: int = 15,
     boundary_smoothing: bool = True,
     temporal_filter: bool = True,
+    temporal_bridge: bool = True,
     min_duration: int = 2,
+    max_gap: int = 3,
 ) -> Tuple[np.ndarray, Dict[str, int]]:
     """
     Full data cleaning pipeline for a 3D segmentation mask sequence (T, H, W).
@@ -105,7 +175,12 @@ def clean_mask_sequence(
         if boundary_smoothing:
             cleaned[t] = smooth_mask_boundaries(cleaned[t])
 
-    # Step 2: Temporal persistence filtering
+    # Step 2: Long-range temporal gap bridging (reconnect 1-3 frame dropouts)
+    bridged_gaps = 0
+    if temporal_bridge and T > 2:
+        cleaned, bridged_gaps = bridge_temporal_mask_gaps(cleaned, max_gap=max_gap)
+
+    # Step 3: Temporal persistence filtering (remove isolated 1-frame noise)
     if temporal_filter and T > 1:
         cleaned = filter_temporal_transients(cleaned, min_duration=min_duration)
 
@@ -121,10 +196,11 @@ def clean_mask_sequence(
         "initial_unique_cells": initial_unique_cells,
         "final_unique_cells": final_unique_cells,
         "removed_noise_labels": removed_cells,
+        "bridged_gaps_count": bridged_gaps,
         "min_area_threshold": min_area,
     }
 
-    print(f"[DataCleaner] Data Cleaning Complete! Initial cells: {initial_unique_cells} -> Cleaned cells: {final_unique_cells} (Removed {removed_cells} noise artifacts)")
+    print(f"[DataCleaner] Data Cleaning Complete! Initial cells: {initial_unique_cells} -> Cleaned cells: {final_unique_cells} (Bridged {bridged_gaps} dropouts)")
     return cleaned, stats
 
 

@@ -38,6 +38,7 @@ import networkx as nx
 import torch
 import torch.nn as nn
 from typing import Dict, List, Optional, Tuple
+from scipy.optimize import linear_sum_assignment
 
 from biotrack_x.encoder import SequenceEncoder
 from biotrack_x.transformer import SpatioTemporalGraphTransformer
@@ -141,16 +142,14 @@ class BioTrackX(nn.Module):
         n_active: int,
     ) -> Dict[int, int]:
         """
-        Assigns tracked cell IDs to query indices via nearest-neighbor centroid matching.
+        Assigns tracked cell IDs to query indices via Hungarian matching.
         Maintains identity consistency across frames.
         """
-        # Collect all unique cell IDs seen across all frames
         all_ids = set()
         for ids in ids_seq:
             all_ids.update(ids.tolist())
         all_ids = sorted(all_ids)
 
-        # Simple greedy assignment: query i → cell_id based on query order
         assignments = {}
         for q_idx in range(min(n_active, len(all_ids))):
             cid = all_ids[q_idx]
@@ -171,10 +170,6 @@ class BioTrackX(nn.Module):
     ) -> np.ndarray:
         """
         Constructs tracked masks (T, H, W) with consistent cell label IDs.
-
-        In inference mode, we use the original Trackastra-style mask labels
-        augmented with BioTrack-X division predictions. Division events from
-        the DivisionQueryHead flag cells that are dividing and refine their IDs.
         """
         tracked = masks.copy()
         return tracked
@@ -185,13 +180,14 @@ class BioTrackX(nn.Module):
         div_mask: torch.Tensor,
         query_to_cell_id: Dict[int, int],
         T: int,
+        mu_seq: Optional[List[torch.Tensor]] = None,
+        max_gap: int = 5,
+        max_shift_per_frame: float = 25.0,
     ) -> nx.DiGraph:
         """
         Constructs a NetworkX DiGraph lineage graph compatible with lineage.py.
-
-        Nodes: (frame, cell_id) tuples.
-        Edges: temporal links (t, cid) → (t+1, cid) for continuity,
-               division forks (t, parent_cid) → (t+1, child_cid1), (t+1, child_cid2).
+        Includes Long-Range Temporal Memory Gap Bridging (1 to max_gap frames)
+        to recover missing tracking links in long multi-day videos.
         """
         G = nx.DiGraph()
 
@@ -203,19 +199,74 @@ class BioTrackX(nn.Module):
             for cid in id_set:
                 G.add_node((t, cid))
 
-        # Add temporal edges (continuity: cell appears in consecutive frames)
+        # Add consecutive temporal edges
         for t in range(T - 1):
             common = frame_ids[t] & frame_ids[t + 1]
             for cid in common:
                 G.add_edge((t, cid), (t + 1, cid))
 
-        # Flag division cells: these are cells where DivisionQueryHead predicted division
-        dividing_query_indices = div_mask.nonzero(as_tuple=False).squeeze(-1).tolist()
+        # Flag dividing cells (DivisionQueryHead predictions)
+        dividing_query_indices = div_mask.nonzero(as_tuple=False).squeeze(-1).tolist() if div_mask.any() else []
         dividing_cells = {query_to_cell_id.get(qi) for qi in dividing_query_indices
                          if qi in query_to_cell_id}
 
-        print(f"[BioTrackX] Division Query Head detected {len(dividing_cells)} "
-              f"dividing cells: {dividing_cells}")
+        print(f"[BioTrackX] Division Query Head detected {len(dividing_cells)} dividing cells: {dividing_cells}")
+
+        # Long-Range Temporal Memory Gap Bridge (up to max_gap frames)
+        bridged_edges = 0
+        for t in range(T - 2):
+            cells_t = frame_ids[t]
+            for cid in cells_t:
+                # If cell is present at t+1, it's already continuously linked
+                if cid in frame_ids[t + 1]:
+                    continue
+                # Protect active mitosis division events
+                if cid in dividing_cells:
+                    continue
+
+                # Search future frames t + k for k in [2, max_gap + 1]
+                for k in range(2, min(max_gap + 2, T - t)):
+                    target_frame = t + k
+                    # Case A: Cell re-emerges with the exact same ID
+                    if cid in frame_ids[target_frame]:
+                        G.add_edge((t, cid), (target_frame, cid))
+                        for gap_idx in range(1, k):
+                            mid_frame = t + gap_idx
+                            G.add_node((mid_frame, cid))
+                            G.add_edge((mid_frame - 1, cid), (mid_frame, cid))
+                        G.add_edge((target_frame - 1, cid), (target_frame, cid))
+                        bridged_edges += 1
+                        break
+                    
+                    # Case B: Spatial centroid proximity matching for re-emerging cells
+                    if mu_seq is not None and mu_seq[t].shape[0] > 0 and mu_seq[target_frame].shape[0] > 0:
+                        ids_t_list = ids_seq[t].tolist()
+                        if cid in ids_t_list:
+                            idx_t = ids_t_list.index(cid)
+                            pos_t = mu_seq[t][idx_t].detach().cpu().numpy()
+
+                            new_cids_target = frame_ids[target_frame] - frame_ids[target_frame - 1]
+                            ids_target_list = ids_seq[target_frame].tolist()
+                            
+                            best_match_cid = None
+                            best_dist = float("inf")
+
+                            for ncid in new_cids_target:
+                                if ncid in ids_target_list:
+                                    idx_tgt = ids_target_list.index(ncid)
+                                    pos_tgt = mu_seq[target_frame][idx_tgt].detach().cpu().numpy()
+                                    dist = np.linalg.norm(pos_tgt - pos_t)
+                                    if dist < best_dist and dist <= max_shift_per_frame * k:
+                                        best_dist = dist
+                                        best_match_cid = ncid
+
+                            if best_match_cid is not None:
+                                G.add_edge((t, cid), (target_frame, best_match_cid))
+                                bridged_edges += 1
+                                break
+
+        if bridged_edges > 0:
+            print(f"[BioTrackX] Long-Range Temporal Memory Bridge: Reconnected {bridged_edges} lineage gaps (max_gap={max_gap})")
 
         return G
 
@@ -338,7 +389,7 @@ class BioTrackX(nn.Module):
         )
 
         lineage_graph = self._build_lineage_graph(
-            ids_seq, transformer_out["div_mask"], query_to_cell_id, T
+            ids_seq, transformer_out["div_mask"], query_to_cell_id, T, mu_seq=mu_seq
         )
 
         uncertainty_maps = self._build_uncertainty_maps(

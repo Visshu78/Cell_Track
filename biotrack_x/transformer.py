@@ -52,10 +52,10 @@ class SpatioTemporalPositionalEncoding(nn.Module):
       PE(t, y, x) = PE_spatial(y, x) + PE_temporal(t)
     """
 
-    def __init__(self, d_model: int, max_frames: int = 64) -> None:
+    def __init__(self, d_model: int, max_frames: int = 4096) -> None:
         super().__init__()
         self.d_model = d_model
-        # Learnable temporal embedding per frame index
+        # Learnable temporal embedding per frame index (supports up to max_frames=4096)
         self.temporal_embed = nn.Embedding(max_frames, d_model)
 
     def get_spatial_pe(self, H: int, W: int) -> torch.Tensor:
@@ -98,8 +98,9 @@ class SpatioTemporalPositionalEncoding(nn.Module):
         spatial_pe = self.get_spatial_pe(H, W)  # (H*W, d)
         tokens = tokens + spatial_pe
 
-        # Add temporal PE
-        t_idx = torch.tensor([frame_idx], dtype=torch.long)
+        # Add temporal PE (modulo safe for long multi-day videos)
+        safe_t = frame_idx % self.temporal_embed.num_embeddings
+        t_idx = torch.tensor([safe_t], dtype=torch.long, device=features.device)
         t_embed = self.temporal_embed(t_idx)  # (1, d)
         tokens = tokens + t_embed
 
