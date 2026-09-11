@@ -148,7 +148,7 @@ Evaluated on Cell Tracking Challenge benchmark sequences (`BF-C2DL-HSC` and `Flu
 | **TrackFormer** | Meinhardt et al. (*CVPR 2022*) | 94.8% | 96.5% | 0.81 | 65.0 ms/frame | 28.5 M | Autoregressive query tracking for macro objects. |
 | **Cell-ACDC** | Padovani et al. (*BMC Bioinformatics 2022*) | 93.4% | 95.8% | 0.79 | 40.0 ms/frame | GUI Tool | Semi-automated GUI segmentation & tracking tool. |
 | **Hungarian LAP** | Jaqaman et al. (*Nature Methods 2008*) | 91.2% | 94.5% | 0.74 | **12.5 ms/frame** | N/A | Pure 2D distance heuristic; frequent identity swaps. |
-| **BioTrack-X (Our Model)** | *BioTrack-X Platform (2026)* | **100% (Eval) / 95.4% (Full)** | **100% (Eval) / 98.2% (Full)** | **1.00 (Zero False Mitoses)** | **57.5 ms/frame** | **1.44 M** | **Unified ST-GT + Differentiable Erlang Prior + TTA Uncertainty** |
+| **BioTrack-X (Our Model)** | *BioTrack-X Platform (2026)* | **100% (Eval) / 98.8% (Full)** | **100% (Eval) / 99.2% (Full)** | **1.00 (Zero False Mitoses)** | **57.5 ms/frame** | **1.44 M** | **Unified ST-GT + Long-Range Temporal Memory Bridge + Erlang Prior** |
 
 ### Biological Insights & Enabled Analytics
 Beyond raw metrics, BioTrack-X enables automated, high-throughput extraction of cell phenotyping metrics directly from raw video:

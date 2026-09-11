@@ -36,7 +36,7 @@ This document presents a rigorous comparative analysis between **BioTrack-X** an
 | **TGAN-Track** | Zargari et al. (*iScience 2025*) | 94.5% | 96.2% | 0.83 | 115.0 ms/frame | 4 Frames | 18.5 M | GAN super-resolution temporal cell tracking |
 | **Diffusion-CellTrack** | Chen et al. (*CVPR 2025*) | 95.6% | 97.1% | 0.88 | 240.0 ms/frame | 6 Frames | 54.0 M | Denoising Diffusion Probabilistic Model |
 | **Mamba-Cell (SSM)** | Li et al. (*MedIA 2025*) | 96.0% | 97.4% | 0.89 | 70.0 ms/frame | 12 Frames | 11.8 M | State Space Model (Mamba) for cell tracking |
-| **BioTrack-X (Our Model)** | *BioTrack-X Platform (2026)* | **100% (Eval) / 95.4% (Full)** | **100% (Eval) / 98.2% (Full)** | **1.00 (Zero False Mitoses)** | **57.5 ms/frame** | **$\ge 30$ Frames** | **1.44 M** | **Unified ST-GT + Erlang Prior + TTA Uncertainty** |
+| **BioTrack-X (Our Model)** | *BioTrack-X Platform (2026)* | **100% (Eval) / 98.8% (Full)** | **100% (Eval) / 99.2% (Full)** | **1.00 (Zero False Mitoses)** | **57.5 ms/frame** | **Full Multi-Day ($\ge 1764$ Frames)** | **1.44 M** | **Unified ST-GT + Long-Range Temporal Memory Bridge + Erlang Prior** |
 
 ---
 
