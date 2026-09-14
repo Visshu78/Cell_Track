@@ -111,15 +111,59 @@ flowchart TD
 
 ---
 
+## 📂 Organized Repository Directory Structure
+
+```text
+Cell_Track/
+├── biotrack_x/                      ──► DEEP LEARNING MODEL SUITE
+│   ├── encoder.py                   ──► ResNet CNN Backbone + 4-Shift TTA Aleatoric Uncertainty
+│   ├── transformer.py               ──► ST-GT Spatio-Temporal Transformer (4096-frame PE)
+│   ├── erlang_prior.py              ──► Differentiable Erlang Cell-Cycle Biological Prior
+│   ├── loss.py                      ──► BioTrackX Multi-Task Differentiable Loss Function
+│   ├── model.py                     ──► BioTrackX Master Model & Long-Range Memory Bridge
+│   └── inference.py                 ──► Inference Pipeline Adapter
+│
+├── clinical_engine.py               ──► Physical SI Calibration (μm/min), Oncology Risk & Motility PCA
+├── data_cleaner.py                  ──► Debris Filtering, Boundary Smoothing & Mask Gap Bridge
+├── ctc_loader.py                    ──► Cell Tracking Challenge (CTC) Dataset Loader
+├── database.py                      ──► SQLite Persistence & HIPAA SHA-256 Audit Logger
+├── disease_analyzer.py              ──► Disease Diagnostics & Biomarker Feature Engine
+├── llm_reporter.py                  ──► Standalone AI Clinical Narrative Reporter
+├── app.py                           ──► Real-Time FastAPI Web Application Server (http://localhost:8000)
+│
+├── lineage.py                       ──► Lineage DiGraph Analysis, Mitosis & Apoptosis Events
+├── morphology.py                    ──► Morphological Extraction (Area, Circularity, Eccentricity)
+├── behavior.py                      ──► Kinematics, Velocity, & Directionality Computations
+├── phenotyping.py                   ──► Unsupervised Motility Clustering (PCA + K-Means)
+├── eda.py                           ──► Exploratory Data Analysis & Visual Inspection
+│
+├── eval_ctc.py                      ──► Official CTC Benchmark Evaluation Script (DET, TRA, F1)
+├── create_excel_comparison.py       ──► Generates 4-Tab SOTA Paper Comparison Workbook
+├── BioTrackX_SOTA_Paper_Comparison.xlsx ──► Multi-Tab Benchmark Excel Report
+├── Paper_Comparison.md              ──► 15 SOTA Research Papers Comparison Document
+├── Architecture_Diagrams.md         ──► System Flowcharts & Mermaid Architectural Diagrams
+├── tracking_pipeline_diagram.md     ──► Detailed Diagrammatic Pipeline Document
+├── claims_defense_matrix.md         ──► Empirical Claims Defense & Code Proof Sheet
+│
+├── templates/                       ──► Jinja2 HTML Templates for Web Dashboards
+├── main.py                          ──► Unified Master Pipeline Command Line Interface
+└── requirements.txt                 ──► Python Dependencies Specification
+```
+
+---
+
 ## Current Codebase Mapping
 
 | Research Module | Current Project File | Functions / Libraries Used |
 | :--- | :--- | :--- |
-| **Cell Morphology** | [morphology.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/morphology.py) | Area, circularity, eccentricity per frame |
-| **Lineage Events** | [lineage.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/lineage.py) | Mitosis/death detection, DAG family trees |
+| **Cell Perception** | [morphology.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/morphology.py) | Area, circularity, eccentricity per frame |
+| **Data Cleaner & Gap Bridge** | [data_cleaner.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/data_cleaner.py) | Debris filter, contour smoothing, 5-frame mask bridge |
+| **Lineage & Events** | [lineage.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/lineage.py) | Mitosis/death detection, DAG family trees |
 | **Behavior Analytics** | [behavior.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/behavior.py) | Cell speed, displacement, directionality |
+| **Clinical Diagnostics** | [clinical_engine.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/clinical_engine.py) | SI unit calibration, Cancer Risk, Motility PCA |
 | **Interactive Lineage Tree** | [generate_lineage_visualizer.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/generate_lineage_visualizer.py) | D3.js pedigree trees & Gantt timeline |
 | **Novel BioTrack-X Architecture** | [biotrack_x/](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/biotrack_x/) | Unified ST-GT + Erlang prior + TTA uncertainty |
+| **FastAPI Web Server** | [app.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/app.py) | Real-time web platform (http://localhost:8000) |
 | **Pipeline Integration** | [main.py](file:///c:/Users/visha/Desktop/Computer%20Vision/Cell_Track/main.py) | End-to-end CLI with all flags |
 
 ---

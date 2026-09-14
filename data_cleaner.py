@@ -1,14 +1,3 @@
-"""
-Data Cleaning & Preprocessing Pipeline Module for Cell Tracking Datasets.
-
-Solves data degradation and noise issues in live-cell microscopy:
-  1. Noise & Debris Filtering: Removes tiny spurious mask fragments (< min_area).
-  2. Morphological Cleaning: Performs binary opening & closing to fill internal holes
-     and smooth jagged boundary contours.
-  3. Cell Separation: Distance transform + watershed separation for touching cells.
-  4. Temporal Consistency Filtering: Removes isolated 1-frame transient noise dropouts.
-  5. Contrast & Illumination Normalization (CLAHE): Normalizes raw brightfield microscopy images.
-"""
 
 from typing import Dict, Tuple, Optional
 import numpy as np
@@ -31,10 +20,7 @@ def filter_small_debris(mask: np.ndarray, min_area: int = 15) -> np.ndarray:
 
 
 def smooth_mask_boundaries(mask: np.ndarray, radius: int = 1) -> np.ndarray:
-    """
-    Applies morphological opening & closing to smooth cell boundary contours
-    and fill internal pixel holes.
-    """
+    
     cleaned_mask = np.zeros_like(mask)
     labels = [c for c in np.unique(mask) if c > 0]
     struct = ndimage.generate_binary_structure(2, 1)
@@ -51,10 +37,7 @@ def smooth_mask_boundaries(mask: np.ndarray, radius: int = 1) -> np.ndarray:
 
 
 def filter_temporal_transients(masks: np.ndarray, min_duration: int = 2) -> np.ndarray:
-    """
-    Removes transient noise spikes that appear for only 1 frame and immediately vanish.
-    A valid cell trajectory must persist for at least min_duration consecutive frames.
-    """
+    
     T, H, W = masks.shape
     cleaned_masks = masks.copy()
 
@@ -80,11 +63,7 @@ def filter_temporal_transients(masks: np.ndarray, min_duration: int = 2) -> np.n
 
 
 def bridge_temporal_mask_gaps(masks: np.ndarray, max_gap: int = 3, max_shift: float = 30.0) -> Tuple[np.ndarray, int]:
-    """
-    Long-Range Temporal Memory Bridge for Segmentation Masks:
-    Fills temporary cell dropouts (1 to max_gap frames) caused by laser focal drift
-    or temporary illumination dimming in long multi-day videos.
-    """
+    
     T, H, W = masks.shape
     bridged_masks = masks.copy()
     bridged_gaps_count = 0
@@ -156,13 +135,7 @@ def clean_mask_sequence(
     min_duration: int = 2,
     max_gap: int = 3,
 ) -> Tuple[np.ndarray, Dict[str, int]]:
-    """
-    Full data cleaning pipeline for a 3D segmentation mask sequence (T, H, W).
-
-    Returns:
-        cleaned_masks: np.ndarray (T, H, W)
-        stats: dictionary summarizing cleaning transformations
-    """
+    
     T, H, W = masks.shape
     print(f"[DataCleaner] Starting Data Cleaning Pipeline on sequence shape ({T}, {H}, {W})...")
     
